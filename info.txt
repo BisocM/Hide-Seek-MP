@@ -1,0 +1,5 @@
+name = Hide and Seek
+author = BisocM
+description = A simple & sleek hide & seek gamemode.
+version = 2
+tags = Gameplay, Multiplayer

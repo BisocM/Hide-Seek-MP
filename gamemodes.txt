@@ -1,0 +1,4 @@
+[Hide and Seek]
+description = "A simple & sleek hide & seek gamemode."
+path = hs/main.lua
+restart = true

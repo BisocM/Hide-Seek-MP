@@ -1,0 +1,7 @@
+# *.exe
+# *.dll
+# *.com
+# *.scr
+# *.bat
+# *.jar
+# .git/*

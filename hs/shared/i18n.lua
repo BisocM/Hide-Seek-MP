@@ -113,6 +113,8 @@ I.strings = I.strings or {
 		["hs.settings.healthRegenEnabled.info"] = "Enable health regeneration for active players.",
 		["hs.settings.hiderTrailEnabled.label"] = "Hider trail",
 		["hs.settings.hiderTrailEnabled.info"] = "Show a short-lived trail from moving hiders (helps seekers track).",
+		["hs.settings.seekerMapEnabled.label"] = "Seeker map",
+		["hs.settings.seekerMapEnabled.info"] = "Allow seekers to open the map.",
 
 		["hs.ui.blind.title"] = "Seekers: WAIT",
 		["hs.ui.blind.subtitle"] = "Hiders are hiding. Time left: {time}",
@@ -224,6 +226,8 @@ I.strings = I.strings or {
 		["hs.settings.healthRegenEnabled.info"] = "Включить регенерацию здоровья для активных игроков.",
 		["hs.settings.hiderTrailEnabled.label"] = "След прячущихся",
 		["hs.settings.hiderTrailEnabled.info"] = "Показывать кратковременный след за движущимися прячущимися (помогает искать).",
+		["hs.settings.seekerMapEnabled.label"] = "Карта искателей",
+		["hs.settings.seekerMapEnabled.info"] = "Разрешить искателям открывать карту.",
 
 		["hs.ui.blind.title"] = "Искатели: ЖДИТЕ",
 		["hs.ui.blind.subtitle"] = "Прячущиеся прячутся. Осталось: {time}",

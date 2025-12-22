@@ -22,6 +22,7 @@ function HS.defaults.make()
 		hiderAbilitiesEnabled = true,
 		healthRegenEnabled = true,
 		hiderTrailEnabled = true,
+		seekerMapEnabled = false,
 		requireAllReady = false,
 	}
 end

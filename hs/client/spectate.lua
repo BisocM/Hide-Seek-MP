@@ -146,8 +146,23 @@ function S.draw(ctx, vm)
 	local localTeam = tonumber(st.localTeam) or (vm.me and tonumber(vm.me.team) or 0)
 
 	local label = HS.t("hs.ui.spectating.subtitle")
+	local followPrefix, followName, followSuffix, followNameColor = nil, nil, nil, nil
 	if targetId ~= 0 and IsPlayerValid(targetId) then
-		label = HS.t("hs.ui.spectating.following", { name = HS.engine.playerName(targetId) })
+		followName = HS.engine.playerName(targetId)
+		local sentinel = "\31HS_NAME\30"
+		local templ = HS.t("hs.ui.spectating.following", { name = sentinel })
+		local a, b = string.find(templ, sentinel, 1, true)
+		if a then
+			followPrefix = string.sub(templ, 1, a - 1)
+			followSuffix = string.sub(templ, b + 1)
+		else
+			followPrefix = HS.t("hs.ui.spectating.following", { name = "" })
+			followSuffix = ""
+		end
+		label = tostring(followPrefix or "") .. tostring(followName or "") .. tostring(followSuffix or "")
+
+		local team = (vm.teamOf and tonumber(vm.teamOf[targetId])) or 0
+		followNameColor = HS.engine.teamColor(team)
 	elseif localTeam == HS.const.TEAM_SEEKERS or localTeam == HS.const.TEAM_HIDERS then
 		label = HS.t("hs.ui.spectating.noTeammate")
 	end
@@ -169,9 +184,43 @@ function S.draw(ctx, vm)
 	end
 
 	UiTextShadow(0, 0, 0, 0.75, 2.0, 0.75)
-	UiColor(1, 1, 1, 0.92)
 	UiFont("regular.ttf", FONT_SIZE_18)
-	UiText(label)
+	if followPrefix ~= nil and followName ~= nil and followSuffix ~= nil then
+		local wPrefix = UiGetTextSize(followPrefix)
+		local wName = UiGetTextSize(followName)
+		local wSuffix = UiGetTextSize(followSuffix)
+		wPrefix = tonumber(wPrefix) or 0
+		wName = tonumber(wName) or 0
+		wSuffix = tonumber(wSuffix) or 0
+		local total = wPrefix + wName + wSuffix
+
+		UiPush()
+		UiAlign("left middle")
+		UiTranslate(-total * 0.5, 0)
+
+		UiColor(1, 1, 1, 0.92)
+		if followPrefix ~= "" then
+			UiText(followPrefix)
+			UiTranslate(wPrefix, 0)
+		end
+
+		local c = followNameColor or { 1, 1, 1, 1 }
+		UiColor(c[1] or 1, c[2] or 1, c[3] or 1, 0.92)
+		if followName ~= "" then
+			UiText(followName)
+			UiTranslate(wName, 0)
+		end
+
+		UiColor(1, 1, 1, 0.92)
+		if followSuffix ~= "" then
+			UiText(followSuffix)
+		end
+
+		UiPop()
+	else
+		UiColor(1, 1, 1, 0.92)
+		UiText(label)
+	end
 
 	UiPop()
 end

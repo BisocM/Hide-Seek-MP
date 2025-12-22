@@ -3,6 +3,17 @@ HS.cli = HS.cli or {}
 HS.cli.app = HS.cli.app or HS.cli.gm or {}
 HS.cli.gm = HS.cli.app -- legacy alias
 
+local function enforceSeekerMapSetting(vm)
+	if not vm or not vm.ready then return end
+	if not vm.settings or vm.settings.seekerMapEnabled == true then return end
+	if not vm.me or vm.me.team ~= HS.const.TEAM_SEEKERS then return end
+
+	SetBool("game.disablemap", true)
+	if GetBool("game.map.enabled") then
+		SetBool("game.map.enabled", false)
+	end
+end
+
 function HS.cli.app.init()
 	if HS.settings and HS.settings.ensureSavegameDefaults then
 		HS.settings.ensureSavegameDefaults(HS.persist)
@@ -50,6 +61,7 @@ function HS.cli.app.tick(dt)
 	end
 
 	local vm = (HS.select and HS.select.matchVm and HS.select.matchVm(ctx, sh)) or nil
+	enforceSeekerMapSetting(vm)
 	if HS.cli.abilities and HS.cli.abilities.tick then
 		HS.cli.abilities.tick(dt, ctx, vm)
 	end
@@ -73,6 +85,8 @@ function HS.cli.app.draw()
 	local sh = HS.select and HS.select.shared and HS.select.shared() or nil
 	local vm = (HS.select and HS.select.matchVm and HS.select.matchVm(ctx, sh)) or nil
 	local dt = HS.engine.timeStep()
+
+	enforceSeekerMapSetting(vm)
 
 	if HS.cli.spectate and HS.cli.spectate.applyCamera then
 		HS.cli.spectate.applyCamera(ctx, vm)

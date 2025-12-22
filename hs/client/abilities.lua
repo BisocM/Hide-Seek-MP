@@ -355,6 +355,7 @@ function C.draw(_ctx, vm)
 					UiTranslate(0, size - h)
 					UiClipRect(size, h)
 					UiColor(0, 0, 0, 0.48)
+					UiTranslate(0, -(size - h))
 					UiRoundedRect(size, size, radius)
 					UiPop()
 				end

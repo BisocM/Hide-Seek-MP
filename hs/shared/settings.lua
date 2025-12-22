@@ -23,6 +23,7 @@ function S.defaults()
 		hiderAbilitiesEnabled = true,
 		healthRegenEnabled = true,
 		hiderTrailEnabled = true,
+		seekerMapEnabled = false,
 		requireAllReady = false,
 	}
 end
@@ -81,6 +82,7 @@ function S.normalize(input, base)
 		hiderAbilitiesEnabled = (input.hiderAbilitiesEnabled ~= false),
 		healthRegenEnabled = (input.healthRegenEnabled == true),
 		hiderTrailEnabled = (input.hiderTrailEnabled == true),
+		seekerMapEnabled = (input.seekerMapEnabled == true),
 		requireAllReady = (input.requireAllReady == true),
 	}
 
@@ -141,6 +143,7 @@ function S.schema()
 				{ key = p .. "hiderAbilitiesEnabled", label = t("hs.settings.hiderAbilitiesEnabled.label"), info = t("hs.settings.hiderAbilitiesEnabled.info"), options = { { label = t("hs.common.on"), value = 1 }, { label = t("hs.common.off"), value = 0 } } },
 				{ key = p .. "healthRegenEnabled", label = t("hs.settings.healthRegenEnabled.label"), info = t("hs.settings.healthRegenEnabled.info"), options = { { label = t("hs.common.on"), value = 1 }, { label = t("hs.common.off"), value = 0 } } },
 				{ key = p .. "hiderTrailEnabled", label = t("hs.settings.hiderTrailEnabled.label"), info = t("hs.settings.hiderTrailEnabled.info"), options = { { label = t("hs.common.on"), value = 1 }, { label = t("hs.common.off"), value = 0 } } },
+				{ key = p .. "seekerMapEnabled", label = t("hs.settings.seekerMapEnabled.label"), info = t("hs.settings.seekerMapEnabled.info"), options = { { label = t("hs.common.off"), value = 0 }, { label = t("hs.common.on"), value = 1 } } },
 			},
 		},
 	}
@@ -173,6 +176,7 @@ function S.ensureSavegameDefaults(persist)
 	ns.ensureInt("hiderAbilitiesEnabled", d.hiderAbilitiesEnabled and 1 or 0)
 	ns.ensureInt("healthRegenEnabled", d.healthRegenEnabled and 1 or 0)
 	ns.ensureInt("hiderTrailEnabled", d.hiderTrailEnabled and 1 or 0)
+	ns.ensureInt("seekerMapEnabled", d.seekerMapEnabled and 1 or 0)
 	ns.ensureInt("requireAllReady", d.requireAllReady and 1 or 0)
 end
 
@@ -199,6 +203,7 @@ function S.readHostStartPayload(persist)
 		hiderAbilitiesEnabled = readBool01(ns, "hiderAbilitiesEnabled", d.hiderAbilitiesEnabled),
 		healthRegenEnabled = readBool01(ns, "healthRegenEnabled", d.healthRegenEnabled),
 		hiderTrailEnabled = readBool01(ns, "hiderTrailEnabled", d.hiderTrailEnabled),
+		seekerMapEnabled = readBool01(ns, "seekerMapEnabled", d.seekerMapEnabled),
 		requireAllReady = readBool01(ns, "requireAllReady", d.requireAllReady),
 	}
 end

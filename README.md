@@ -65,6 +65,7 @@ Settings are grouped in the host menu and persisted in the savegame.
 - Hider abilities (dash/super jump)
 - Health regeneration
 - Hider trail
+- Seeker map (allow/disallow seekers opening the map)
 
 ## Team Balance & Join-In-Progress
 

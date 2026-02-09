@@ -187,7 +187,7 @@ function S.readHostStartPayload(persist)
 	local d = S.defaults()
 	local ns = P.ns(S.savePrefix)
 
-	return {
+	local payload = {
 		hideSeconds = readNumber(ns, "hideSeconds", d.hideSeconds),
 		seekSeconds = readNumber(ns, "seekSeconds", d.seekSeconds),
 		intermissionSeconds = readNumber(ns, "intermissionSeconds", d.intermissionSeconds),
@@ -206,4 +206,17 @@ function S.readHostStartPayload(persist)
 		seekerMapEnabled = readBool01(ns, "seekerMapEnabled", d.seekerMapEnabled),
 		requireAllReady = readBool01(ns, "requireAllReady", d.requireAllReady),
 	}
+
+	if HS.loadout and HS.loadout.readPersist then
+		-- Loadout config is managed separately from the fixed settings schema.
+		-- No discovery here: if the host hasn't configured it, keep payload small.
+		local lo = HS.loadout.readPersist(P, { discoverIfMissing = false })
+		if lo and lo.enabled == true then
+			payload.loadout = lo
+		else
+			payload.loadout = { enabled = false }
+		end
+	end
+
+	return payload
 end

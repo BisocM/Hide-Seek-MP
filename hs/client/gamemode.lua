@@ -18,6 +18,9 @@ function HS.cli.app.init()
 	if HS.settings and HS.settings.ensureSavegameDefaults then
 		HS.settings.ensureSavegameDefaults(HS.persist)
 	end
+	if HS.cli.admin_menu and HS.cli.admin_menu.init then
+		HS.cli.admin_menu.init()
+	end
 	if HS.cli.spectate and HS.cli.spectate.init then
 		HS.cli.spectate.init()
 	end
@@ -50,6 +53,13 @@ function HS.cli.app.tick(dt)
 
 	local ctx = HS.ctx and HS.ctx.get and HS.ctx.get() or nil
 	local sh = HS.select and HS.select.shared and HS.select.shared() or nil
+	local vm = (sh and HS.select and HS.select.matchVm and HS.select.matchVm(ctx, sh)) or nil
+
+	-- Host/admin overlay and tool restrictions need to restore/close cleanly even if `shared.hs` disappears.
+	if HS.cli.admin_menu and HS.cli.admin_menu.tick then
+		HS.cli.admin_menu.tick(dt, ctx, vm)
+	end
+
 	if not sh then return end
 
 	if HS.cli.timeSync and HS.cli.timeSync.tick then
@@ -60,7 +70,6 @@ function HS.cli.app.tick(dt)
 		HS.cli.trail.tick(dt)
 	end
 
-	local vm = (HS.select and HS.select.matchVm and HS.select.matchVm(ctx, sh)) or nil
 	enforceSeekerMapSetting(vm)
 	if HS.cli.abilities and HS.cli.abilities.tick then
 		HS.cli.abilities.tick(dt, ctx, vm)
@@ -108,4 +117,9 @@ function HS.cli.app.draw()
 		HS.cli.toast.draw()
 	end
 	hudDrawBanner(dt)
+
+	-- Render last so it can sit above other HUD elements.
+	if HS.cli.admin_menu and HS.cli.admin_menu.draw then
+		HS.cli.admin_menu.draw(dt, ctx, vm)
+	end
 end

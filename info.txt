@@ -1,5 +1,26 @@
 name = Hide and Seek
 author = BisocM
-description = A simple & sleek hide & seek gamemode.
-version = 2
-tags = Gameplay, Multiplayer
+description = A multiplayer hide & seek game mode for Teardown with a sleek appearance.
+
+Please be aware that the mod may still have some bugs, as it was developed in under a day.
+
+[h1]Features[/h1]
+The game mode is fairly feature-complete, and was made in a rapid prototyping fashion. I have added some of the features that I consider to be important for a good-will hide & seek play with friends.
+
+Features include:
+- Various admin controls to fine-tune the game mode
+- Mini-abilities for hiders like a dash & a super-jump to grant the edge over seekers. These are toggleable by the host
+- A tagging & kill-to-find system for the seekers, togglable by host
+- Infection mode
+- Spectators
+- Localization with current support for EN, RU
+and so on.
+
+I have explicitly opted not to implement any weapons-control interfaces, as there are other mods that are capable of handling that. If a need arises, I will work on basic weapons control.
+
+[h1]Licensing[/h1]
+Anyone is free to modify the mod as they see fit. The project is available on [url=https://github.com/BisocM/Hide-Seek-MP]GitHub[/url] with an Apache 2.0 license.
+
+Detailed documentation on this project can be found [url=https://bisocm.org/projects/hide-seek-teardown]here[/url].
+version = 2.1
+tags = Gameplay, Multiplayer, GameMode

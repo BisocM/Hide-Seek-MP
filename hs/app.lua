@@ -11,6 +11,7 @@
 #include "server/abilities.lua"
 #include "server/tagging.lua"
 #include "server/round.lua"
+#include "server/loadout.lua"
 #include "server/gamemode.lua"
 #include "server/notify.lua"
 #include "server/rpc.lua"
@@ -25,6 +26,7 @@
 #include "client/spectate.lua"
 #include "client/pregame.lua"
 #include "client/trail.lua"
+#include "client/admin_menu.lua"
 #include "client/gamemode.lua"
 
 HS = HS or {}

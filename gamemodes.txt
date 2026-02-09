@@ -1,4 +1,4 @@
 [Hide and Seek]
-description = "A simple & sleek hide & seek gamemode."
+description = "A multiplayer hide & seek game mode for Teardown with a sleek appearance."
 path = hs/main.lua
 restart = true

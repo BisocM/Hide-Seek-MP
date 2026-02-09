@@ -15,7 +15,14 @@ end
 
 function HS.srv.app.applyHostSettings(state, settings)
 	state.settings = state.settings or HS.defaults.make()
+	local prevLoadout = state.settings.loadout
 	local normalized = (HS.settings and HS.settings.normalize and HS.settings.normalize(settings, state.settings)) or (settings or state.settings)
+
+	if HS.loadout and HS.loadout.normalize then
+		local incoming = settings and settings.loadout
+		normalized.loadout = HS.loadout.normalize(incoming, prevLoadout)
+	end
+
 	state.settings = normalized
 	state._settingsCopy = HS.util.deepcopy(normalized)
 
@@ -483,6 +490,15 @@ function HS.srv.app.tick(dt)
 			tick = function(_self, _ctx, state, _dtt)
 				if syncPlayerRoster(state) then
 					HS.srv.syncShared(state)
+				end
+				return false
+			end,
+		},
+		{
+			name = "loadout",
+			tick = function(_self, _ctx, state, dtt)
+				if HS.srv.loadout and HS.srv.loadout.tick then
+					HS.srv.loadout.tick(state, dtt)
 				end
 				return false
 			end,

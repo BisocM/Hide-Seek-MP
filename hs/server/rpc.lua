@@ -59,6 +59,19 @@ function HS.srv.rpc.timeSync(playerId, seq, clientSentAt)
 	HS.engine.clientCall(playerId, "client.hs_timeSync", seq, serverNow, tonumber(clientSentAt) or 0)
 end
 
+function HS.srv.rpc.updateLoadout(playerId, loadout)
+	local st = server.hs
+	if not st then return end
+	if not IsPlayerValid(playerId) then return end
+	if not IsPlayerHost(playerId) then return end
+	if not (HS.loadout and HS.loadout.normalize) then return end
+
+	st.settings = st.settings or HS.defaults.make()
+	st.settings.loadout = HS.loadout.normalize(loadout or {}, st.settings.loadout)
+	st._settingsCopy = nil -- force syncShared() to deep-copy fresh settings
+	HS.srv.syncShared(st)
+end
+
 function server.hs_start(playerId, settings)
 	HS.srv.rpc.start(playerId, settings)
 end
@@ -81,4 +94,8 @@ end
 
 function server.hs_timeSync(playerId, seq, clientSentAt)
 	HS.srv.rpc.timeSync(playerId, seq, clientSentAt)
+end
+
+function server.hs_updateLoadout(playerId, loadout)
+	HS.srv.rpc.updateLoadout(playerId, loadout)
 end

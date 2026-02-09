@@ -36,12 +36,17 @@ A multiplayer hide & seek gamemode for Teardown with a clean, modern HUD, round 
   - A hand icon prompt appears when a hider is in range and in the crosshair.
 - **Dash (Hiders):** `Q`
 - **Super Jump (Hiders):** `F` to arm, then your next jump triggers the boost.
+- **Admin menu (Host):** `F6` (also available as **HS Admin** in the pause menu)
 
 Key bindings for abilities are defined in `hs/shared/input.lua:1`.
 
 ## Settings (Host)
 
 Settings are grouped in the host menu and persisted in the savegame.
+
+**Loadouts (Host/Admin)**
+- Host-only admin menu to assign which team can use each tool/weapon (Off / Seekers / Hiders / Both)
+- Includes one-click actions like "Disable all" and a "Refresh tools" button to detect modded tools
 
 **Round**
 - Hiding time

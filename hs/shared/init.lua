@@ -5,6 +5,7 @@
 #include "theme.lua"
 #include "i18n.lua"
 #include "persist.lua"
+#include "loadout.lua"
 #include "settings.lua"
 #include "select.lua"
 #include "input.lua"

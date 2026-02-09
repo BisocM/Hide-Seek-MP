@@ -1,5 +1,7 @@
 # Hide & Seek \[MP] (Teardown)
 
+[![Steam Workshop](https://img.shields.io/badge/Steam-Workshop%20Page-blue?logo=steam)](https://steamcommunity.com/sharedfiles/filedetails/?id=3624969238)
+
 A multiplayer hide & seek gamemode for Teardown with a clean, modern HUD, round flow, and configurable rules.
 
 ## Features

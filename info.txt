@@ -22,5 +22,5 @@ I have explicitly opted not to implement any weapons-control interfaces, as ther
 Anyone is free to modify the mod as they see fit. The project is available on [url=https://github.com/BisocM/Hide-Seek-MP]GitHub[/url] with an Apache 2.0 license.
 
 Detailed documentation on this project can be found [url=https://bisocm.org/projects/hide-seek-teardown]here[/url].
-version = 2.1
+version = 2.2
 tags = Gameplay, Multiplayer, GameMode

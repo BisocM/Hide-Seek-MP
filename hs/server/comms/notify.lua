@@ -15,6 +15,23 @@ local function toastPayload(keyOrText, params)
 	return tostring(keyOrText or "")
 end
 
+local function safePlayerName(playerId)
+	playerId = tonumber(playerId) or 0
+	if playerId <= 0 then
+		return "Unknown"
+	end
+	if type(GetPlayerName) == "function" then
+		local ok, name = pcall(GetPlayerName, playerId)
+		if ok then
+			name = tostring(name or "")
+			if name ~= "" and name ~= "?" and string.upper(name) ~= "UNKNOWN" then
+				return name
+			end
+		end
+	end
+	return "P" .. tostring(playerId)
+end
+
 function N.toast(targetPlayerId, keyOrText, seconds, params)
 	return HS.engine.clientCall(targetPlayerId or 0, "client.hs_toast", toastPayload(keyOrText, params), tonumber(seconds) or 0)
 end
@@ -24,7 +41,17 @@ function N.victory(targetPlayerId, winnerId)
 end
 
 function N.feedCaught(targetPlayerId, attackerId, victimId, method)
-	return HS.engine.clientCall(targetPlayerId or 0, "client.hs_feedCaught", tonumber(attackerId) or 0, tonumber(victimId) or 0, tostring(method or "tag"))
+	local a = tonumber(attackerId) or 0
+	local v = tonumber(victimId) or 0
+	return HS.engine.clientCall(
+		targetPlayerId or 0,
+		"client.hs_feedCaught",
+		a,
+		v,
+		tostring(method or "tag"),
+		safePlayerName(a),
+		safePlayerName(v)
+	)
 end
 
 function N.abilityVfx(targetPlayerId, abilityId, pos, dir, pos2, sourcePlayerId)

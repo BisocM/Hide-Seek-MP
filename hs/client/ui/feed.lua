@@ -19,11 +19,15 @@ local function safePlayerName(playerId)
 	return HS.engine.playerName(playerId)
 end
 
-local function iconForMethod(method)
+local function isUsableName(name)
+	name = tostring(name or "")
+	if name == "" or name == "?" then return false end
+	return string.upper(name) ~= "UNKNOWN"
+end
+
+local function iconForMethod(_method)
 	local icons = HS.ui and HS.ui.icons or nil
-	if method == "kill" then
-		return (icons and icons.kill) or "ui/hud/crosshair-gun.png"
-	end
+	-- Keep a single "caught" visual language for both tags and kills.
 	return (icons and icons.tag) or "ui/hud/crosshair-hand.png"
 end
 
@@ -31,12 +35,23 @@ function HS.cli.feed.init()
 	HS.cli.feed._items = HS.cli.feed._items or {}
 end
 
-function HS.cli.feed.push(attackerId, victimId, method)
+function HS.cli.feed.push(attackerId, victimId, method, attackerName, victimName)
+	local a = tonumber(attackerId) or 0
+	local v = tonumber(victimId) or 0
+	local aName = tostring(attackerName or "")
+	local vName = tostring(victimName or "")
+	if not isUsableName(aName) then
+		aName = safePlayerName(a)
+	end
+	if not isUsableName(vName) then
+		vName = safePlayerName(v)
+	end
+
 	local item = {
-		attackerId = tonumber(attackerId) or 0,
-		victimId = tonumber(victimId) or 0,
-		attackerName = safePlayerName(attackerId),
-		victimName = safePlayerName(victimId),
+		attackerId = a,
+		victimId = v,
+		attackerName = aName,
+		victimName = vName,
 		method = tostring(method or "tag"),
 		t = 0.0,
 		dur = ITEM_TIME,
@@ -109,6 +124,16 @@ function HS.cli.feed.draw()
 
 		local attackerName = it.attackerName or "?"
 		local victimName = it.victimName or "?"
+		local resolvedAttacker = safePlayerName(it.attackerId)
+		local resolvedVictim = safePlayerName(it.victimId)
+		if isUsableName(resolvedAttacker) then
+			attackerName = resolvedAttacker
+			it.attackerName = resolvedAttacker
+		end
+		if isUsableName(resolvedVictim) then
+			victimName = resolvedVictim
+			it.victimName = resolvedVictim
+		end
 		local _f1, attackerText = uiTextConstrained(attackerName, FONT_BOLD, FONT_SIZE_20, nameW, 1)
 		local _f2, victimText = uiTextConstrained(victimName, FONT_BOLD, FONT_SIZE_20, nameW, 1)
 
@@ -152,8 +177,8 @@ function HS.cli.feed.draw()
 	UiPop()
 end
 
-function client.hs_feedCaught(attackerId, victimId, method)
+function client.hs_feedCaught(attackerId, victimId, method, attackerName, victimName)
 	if HS.cli.feed and HS.cli.feed.push then
-		HS.cli.feed.push(attackerId, victimId, method)
+		HS.cli.feed.push(attackerId, victimId, method, attackerName, victimName)
 	end
 end

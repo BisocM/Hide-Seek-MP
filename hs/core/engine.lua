@@ -34,14 +34,17 @@ function E.localPlayerId()
 end
 
 function E.playerName(playerId)
-	if not E.isPlayerValid(playerId) then return "?" end
+	playerId = tonumber(playerId) or 0
+	if playerId <= 0 then return "?" end
 	if not isFn(GetPlayerName) then return "?" end
 	local ok, name = pcall(GetPlayerName, playerId)
 	if ok then
 		local s = tostring(name or "")
-		if s ~= "" then return s end
+		if s ~= "" and s ~= "?" and string.upper(s) ~= "UNKNOWN" then
+			return s
+		end
 	end
-	return "?"
+	return "P" .. tostring(playerId)
 end
 
 function E.teamColor(teamId)

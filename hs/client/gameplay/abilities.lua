@@ -7,6 +7,15 @@ local C = HS.cli.abilities
 C.impl = C.impl or {}
 C.fx = C.fx or {}
 
+local SIDEBAR_SLOT_COUNT = 5
+local SLOT_FALLBACK_KEYS = {
+	[3] = "abilitySlot3",
+	[4] = "abilitySlot4",
+	[5] = "abilitySlot5",
+}
+local PRESS_ANIM_SECONDS = 0.16
+local PRESS_ANIM_IN_FRACTION = 0.35
+
 local function clamp(v, a, b)
 	return HS.util.clamp(tonumber(v) or 0, a, b)
 end
@@ -78,10 +87,63 @@ local function abilityVm(vm, def)
 	return vm.abilities[def.id]
 end
 
+local function abilitySlot(def)
+	return math.floor(tonumber(def and (def.slot or (def.ui and def.ui.slot))) or 0)
+end
+
+local function abilityInputKey(def, slot)
+	slot = tonumber(slot) or abilitySlot(def)
+	if slot >= 3 and slot <= SIDEBAR_SLOT_COUNT then
+		return SLOT_FALLBACK_KEYS[slot] or ""
+	end
+	local key = tostring(def and def.key or "")
+	if key ~= "" then
+		return key
+	end
+	return SLOT_FALLBACK_KEYS[slot] or ""
+end
+
+local function beginPressAnim(abilityId, now)
+	abilityId = tostring(abilityId or "")
+	if abilityId == "" then return end
+	now = tonumber(now) or HS.engine.now()
+	C._pressAnims = C._pressAnims or {}
+	C._pressAnims[abilityId] = {
+		startedAt = now,
+		untilAt = now + PRESS_ANIM_SECONDS,
+	}
+end
+
+local function pressAnimAmount(abilityId, now)
+	abilityId = tostring(abilityId or "")
+	if abilityId == "" then return 0 end
+	local anims = C._pressAnims
+	if type(anims) ~= "table" then return 0 end
+	local rec = anims[abilityId]
+	if type(rec) ~= "table" then return 0 end
+
+	now = tonumber(now) or HS.engine.now()
+	local t0 = tonumber(rec.startedAt) or 0
+	local t1 = tonumber(rec.untilAt) or 0
+	if t1 <= t0 or now >= t1 then
+		anims[abilityId] = nil
+		return 0
+	end
+
+	local p = clamp((now - t0) / (t1 - t0), 0, 1)
+	if p <= PRESS_ANIM_IN_FRACTION then
+		return clamp(p / PRESS_ANIM_IN_FRACTION, 0, 1)
+	end
+
+	local outSpan = math.max(0.0001, 1.0 - PRESS_ANIM_IN_FRACTION)
+	return clamp(1.0 - ((p - PRESS_ANIM_IN_FRACTION) / outSpan), 0, 1)
+end
+
 function C.init()
 	C._vfxQueue = C._vfxQueue or {}
 	C._emitters = C._emitters or {}
 	C._emitterPool = C._emitterPool or {}
+	C._pressAnims = C._pressAnims or {}
 end
 
 function C.enqueueVfx(abilityId, pos, dir, pos2, sourcePlayerId)
@@ -198,8 +260,10 @@ function C.tick(_dt, _ctx, vm)
 		local armedUntil = tonumber(st.armedUntil) or 0
 		local cd = HS.abilities.cooldownLeft(now, readyAt)
 		local armed = HS.abilities.isArmed(now, armedUntil)
+		local keyName = abilityInputKey(def)
 
-		if HS.input and HS.input.keyPressed and HS.input.keyPressed(def.key) then
+		if keyName ~= "" and HS.input and HS.input.keyPressed and HS.input.keyPressed(keyName) then
+			beginPressAnim(def.id, now)
 			if cd <= 0 and not armed then
 				HS.engine.serverCall("server.hs_ability", vm.me.id, def.id, "use")
 			end
@@ -268,20 +332,51 @@ local function drawAbilityIcon(path, size, alpha)
 	UiPop()
 end
 
-local function drawKeycap(keyText, alpha)
-	keyText = tostring(keyText or "")
-	if keyText == "" then return end
+local function abilityKeyText(def, slot)
+	local keyName = abilityInputKey(def, slot)
+	if keyName == "" then return "" end
+	local key = tostring(HS.input and HS.input.keys and HS.input.keys[keyName] or keyName)
+	if key == "" then return "" end
+	return string.upper(key)
+end
+
+local function slotAbilityMap(defs, slotCount)
+	local out = {}
+	local nextAuto = 1
+	for i = 1, #defs do
+		local def = defs[i]
+		local slot = math.floor(tonumber(def and (def.slot or (def.ui and def.ui.slot))) or 0)
+		if slot < 1 or slot > slotCount or out[slot] ~= nil then
+			while nextAuto <= slotCount and out[nextAuto] ~= nil do
+				nextAuto = nextAuto + 1
+			end
+			slot = nextAuto
+		end
+		if slot >= 1 and slot <= slotCount then
+			out[slot] = def
+		end
+	end
+	return out
+end
+
+local function drawSidebarKeycap(label, keySize, teamColor, alpha)
+	label = tostring(label or "")
+	if label == "" then return end
+	local r = tonumber(teamColor and teamColor[1]) or 0.85
+	local g = tonumber(teamColor and teamColor[2]) or 0.85
+	local b = tonumber(teamColor and teamColor[3]) or 0.95
+	local cr, cg, cb = C.fx.lightenColor({ r, g, b, 1 })
 
 	UiPush()
 	UiAlign("center middle")
-	UiColor(0, 0, 0, 0.40 * alpha)
-	UiRoundedRect(24, 18, 6)
-	UiColor(1, 1, 1, 0.14 * alpha)
-	UiRoundedRectOutline(24, 18, 6, 2)
+	UiColor(0, 0, 0, 0.35 * alpha)
+	UiRoundedRect(keySize, keySize, 4)
+	UiColor(r, g, b, 0.50 * alpha)
+	UiRoundedRectOutline(keySize, keySize, 4, 2)
 	UiTextShadow(0, 0, 0, 0.75 * alpha, 2.0, 0.75)
-	UiColor(1, 1, 1, 0.92 * alpha)
-	UiFont(FONT_BOLD, FONT_SIZE_18)
-	UiText(keyText)
+	UiColor(cr, cg, cb, 0.95 * alpha)
+	UiFont(FONT_BOLD, keySize >= 24 and FONT_SIZE_20 or FONT_SIZE_18)
+	UiText(label)
 	UiPop()
 end
 
@@ -292,59 +387,78 @@ function C.draw(_ctx, vm)
 	if not hiderAbilitiesEnabled(vm) then return end
 
 	local now = tonumber(vm.now) or HS.engine.now()
+	local localTeam = tonumber(vm.me and vm.me.team) or 0
+	local teamC = HS.engine.teamColor(localTeam)
+	local tr = tonumber(teamC and teamC[1]) or 0.85
+	local tg = tonumber(teamC and teamC[2]) or 0.85
+	local tb = tonumber(teamC and teamC[3]) or 0.95
 
-	local margin = 26
-	local size = 192
-	local gap = 18
-	local radius = 24
+	local slotCount = SIDEBAR_SLOT_COUNT
+	local margin = 24
+	local size = 78
+	local gap = 10
+	local radius = 9
+	local keySize = 26
+	local keyProtrusion = keySize * 0.60
 
 	UiPush()
 	UiAlign("left top")
 	local defs = HS.abilities.list()
-	local count = #defs
-	local totalHeight = (count > 0) and (count * size + (count - 1) * gap) or 0
+	local bySlot = slotAbilityMap(defs, slotCount)
+	local totalHeight = slotCount * size + (slotCount - 1) * gap
 	local x = UiWidth() - margin - size
 	local y = UiHeight() * 0.5 - totalHeight * 0.5
-	x = math.max(margin, x)
-	if totalHeight > 0 then
-		local minY = margin
-		local maxY = UiHeight() - margin - totalHeight
-		if maxY < minY then
-			y = minY
-		else
-			y = clamp(y, minY, maxY)
-		end
+	local minX = margin + keyProtrusion
+	x = math.max(minX, x)
+
+	local minY = margin
+	local maxY = UiHeight() - margin - totalHeight
+	if maxY < minY then
+		y = minY
+	else
+		y = clamp(y, minY, maxY)
 	end
 	UiTranslate(x, y)
 
-	for _, def in ipairs(defs) do
-		local st = abilityVm(vm, def) or {}
-		local readyAt = tonumber(st.readyAt) or 0
-		local armedUntil = tonumber(st.armedUntil) or 0
+	for slot = 1, slotCount do
+		local def = bySlot[slot]
+		local st = def and (abilityVm(vm, def) or {}) or nil
+		local readyAt = tonumber(st and st.readyAt) or 0
+		local armedUntil = tonumber(st and st.armedUntil) or 0
+		local cdLeft = def and HS.abilities.cooldownLeft(now, readyAt) or 0
+		local cdTotal = clamp(def and def.cooldownSeconds or 1, 0.1, 999)
+		local armed = def and HS.abilities.isArmed(now, armedUntil) or false
+		local hasAbility = def ~= nil
+		local pressAmount = hasAbility and pressAnimAmount(def.id, now) or 0
 
-		local cdLeft = HS.abilities.cooldownLeft(now, readyAt)
-		local cdTotal = clamp(def.cooldownSeconds or 1, 0.1, 999)
-		local armed = HS.abilities.isArmed(now, armedUntil)
-
-		local alpha = (cdLeft > 0) and 0.72 or 1.0
+		local alpha = hasAbility and ((cdLeft > 0) and 0.78 or 1.0) or 0.72
+		local keyText = abilityKeyText(def, slot)
 
 		UiPush()
 		UiAlign("left top")
-		if HS.ui.primitives and HS.ui.primitives.glassPill then
-			HS.ui.primitives.glassPill(size, size, radius, 0.95)
-		else
-			uiDrawPanel(size, size, radius)
-		end
+
+		UiColor(0, 0, 0, 0.34 * alpha)
+		UiRoundedRect(size, size, radius)
+		UiColor(tr, tg, tb, (hasAbility and 0.18 or 0.10) * alpha)
+		UiRoundedRect(size, size, radius)
+		UiColor(tr, tg, tb, (hasAbility and 0.55 or 0.30) * alpha)
+		UiRoundedRectOutline(size, size, radius, 3)
 
 		if armed then
-			UiColor(COLOR_YELLOW[1], COLOR_YELLOW[2], COLOR_YELLOW[3], 0.55)
+			UiColor(COLOR_YELLOW[1], COLOR_YELLOW[2], COLOR_YELLOW[3], 0.72)
 			UiRoundedRectOutline(size, size, radius, 3)
 		end
 
-		UiPush()
-		UiTranslate(size * 0.5, size * 0.5)
-		drawAbilityIcon(def.icon, size * 0.88, alpha)
-		UiPop()
+		if hasAbility then
+			UiPush()
+			UiTranslate(size * 0.5, size * (0.5 + 0.03 * pressAmount))
+			drawAbilityIcon(def.icon, size * (0.52 - 0.08 * pressAmount), alpha * (1.0 - 0.06 * pressAmount))
+			UiPop()
+
+			if pressAmount > 0 then
+				UiColor(0, 0, 0, 0.18 * pressAmount * alpha)
+				UiRoundedRect(size, size, radius)
+			end
 
 			if cdLeft > 0 then
 				local p = clamp(cdLeft / cdTotal, 0, 1)
@@ -354,27 +468,26 @@ function C.draw(_ctx, vm)
 					UiAlign("left top")
 					UiTranslate(0, size - h)
 					UiClipRect(size, h)
-					UiColor(0, 0, 0, 0.48)
+					UiColor(0, 0, 0, 0.52)
 					UiTranslate(0, -(size - h))
 					UiRoundedRect(size, size, radius)
 					UiPop()
 				end
 
 				UiPush()
-			UiTranslate(size * 0.5, size * 0.5)
-			UiAlign("center middle")
-			UiColor(1, 1, 1, 0.92)
-			UiTextShadow(0, 0, 0, 0.75, 2.0, 0.75)
-			UiFont(FONT_BOLD, FONT_SIZE_22)
-			UiText(tostring(math.ceil(cdLeft)))
-			UiPop()
+				UiTranslate(size * 0.5, size * 0.5)
+				UiAlign("center middle")
+				UiColor(1, 1, 1, 0.95)
+				UiTextShadow(0, 0, 0, 0.75, 2.0, 0.75)
+				UiFont(FONT_BOLD, FONT_SIZE_22)
+				UiText(tostring(math.ceil(cdLeft)))
+				UiPop()
+			end
 		end
 
 		UiPush()
-		UiTranslate(size - 20, size - 17)
-		local keyText = tostring(HS.input and HS.input.keys and HS.input.keys[def.key] or "")
-		keyText = string.upper(keyText)
-		drawKeycap(keyText, 0.95)
+		UiTranslate(-keyProtrusion, size * 0.5)
+		drawSidebarKeycap(keyText, keySize, teamC, hasAbility and 1.0 or 0.55)
 		UiPop()
 
 		UiPop()

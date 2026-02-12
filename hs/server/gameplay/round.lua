@@ -1,7 +1,7 @@
 HS = HS or {}
 HS.srv = HS.srv or {}
 
-function HS.srv.syncShared(state)
+function HS.srv.publishShared(state)
 	shared.hs = shared.hs or {}
 	local sh = shared.hs
 
@@ -162,7 +162,7 @@ function HS.srv.beginRound(state)
 
 	setPhase(state, HS.const.PHASE_HIDING, tonumber(state.settings.hideSeconds) or 20)
 	HS.srv.notify.toast(0, "hs.toast.hideStarted", 1.3)
-	HS.srv.syncShared(state)
+	HS.state.snapshot.syncFromSource(state)
 end
 
 function HS.srv.endRound(state, winner)
@@ -191,7 +191,7 @@ function HS.srv.endRound(state, winner)
 	else
 		HS.srv.notify.toast(0, "hs.toast.roundOver", 1.2)
 	end
-	HS.srv.syncShared(state)
+	HS.state.snapshot.syncFromSource(state)
 end
 
 function HS.srv.stopMatchToSetup(state)
@@ -237,7 +237,7 @@ function HS.srv.tickRound(state, dt)
 			end
 			setPhase(state, HS.const.PHASE_SEEKING, tonumber(state.settings.seekSeconds) or 300)
 			HS.srv.notify.toast(0, "hs.toast.seekStarted", 1.3)
-			HS.srv.syncShared(state)
+			HS.state.snapshot.syncFromSource(state)
 		end
 		return
 	end

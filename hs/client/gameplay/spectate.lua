@@ -45,6 +45,32 @@ local function fillAnyCandidates(ctx, vm)
 	return out
 end
 
+local function removeCandidate(candidates, pid)
+	pid = tonumber(pid) or 0
+	if pid == 0 then return end
+	for i = 1, #candidates do
+		if candidates[i] == pid then
+			candidates[i] = 0
+			return
+		end
+	end
+end
+
+local function pickRandomCandidate(candidates)
+	local pool = {}
+	for i = 1, #candidates do
+		local pid = tonumber(candidates[i]) or 0
+		if pid ~= 0 then
+			pool[#pool + 1] = pid
+		end
+	end
+	if #pool == 0 then return 0 end
+	if type(GetRandomInt) == "function" then
+		return pool[GetRandomInt(1, #pool)]
+	end
+	return pool[1]
+end
+
 local function chooseTarget(ctx, vm)
 	if not vm or not vm.ready or not vm.me then return 0 end
 	if not vm.teamOf or not vm.outOf then return 0 end
@@ -62,14 +88,7 @@ local function chooseTarget(ctx, vm)
 		candidates = fillAnyCandidates(ctx, vm)
 	end
 
-	if localId ~= 0 then
-		for i = 1, #candidates do
-			if candidates[i] == localId then
-				candidates[i] = 0
-				break
-			end
-		end
-	end
+	removeCandidate(candidates, localId)
 
 	local target = tonumber(st.targetId) or 0
 	local valid = false
@@ -83,13 +102,14 @@ local function chooseTarget(ctx, vm)
 	end
 
 	if not valid then
-		for i = 1, #candidates do
-			local pid = tonumber(candidates[i]) or 0
-			if pid ~= 0 then
-				target = pid
-				break
-			end
-		end
+		target = pickRandomCandidate(candidates)
+	end
+
+	-- If eliminated as the last member of your team, fallback to any active player.
+	if target == 0 and (localTeam == HS.const.TEAM_SEEKERS or localTeam == HS.const.TEAM_HIDERS) then
+		candidates = fillAnyCandidates(ctx, vm)
+		removeCandidate(candidates, localId)
+		target = pickRandomCandidate(candidates)
 	end
 
 	st.targetId = target

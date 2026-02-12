@@ -11,7 +11,11 @@ function HS.srv.rpc.start(playerId, settings)
 	if st.phase ~= HS.const.PHASE_SETUP then return end
 
 	HS.srv.app.applyHostSettings(st, settings)
-	HS.srv.syncShared(st)
+	HS.state.snapshot.syncFromSource(st)
+
+	if shared and shared._hud then
+		shared._hud.gameIsSetup = true
+	end
 
 	teamsStart(false)
 end
@@ -27,18 +31,10 @@ function HS.srv.rpc.requestTag(playerId)
 	end
 
 	if HS.srv.tryTag(st, playerId) then
-		HS.srv.syncShared(st)
+		HS.state.snapshot.syncFromSource(st)
 	else
 		HS.srv.notify.toast(playerId, "hs.toast.noHiderInRange", 0.75)
 	end
-end
-
-function HS.srv.rpc.useAbility(playerId, abilityId)
-	return HS.srv.rpc.ability(playerId, abilityId, "use")
-end
-
-function HS.srv.rpc.triggerSuperjump(playerId)
-	return HS.srv.rpc.ability(playerId, HS.abilities and HS.abilities.ids and HS.abilities.ids.superjump, "trigger")
 end
 
 function HS.srv.rpc.ability(playerId, abilityId, event)
@@ -48,7 +44,7 @@ function HS.srv.rpc.ability(playerId, abilityId, event)
 	if not HS.srv.abilities or not HS.srv.abilities.executeAbility then return end
 
 	if HS.srv.abilities.executeAbility(st, playerId, abilityId, event) then
-		HS.srv.syncShared(st)
+		HS.state.snapshot.syncFromSource(st)
 	end
 end
 
@@ -68,34 +64,16 @@ function HS.srv.rpc.updateLoadout(playerId, loadout)
 
 	st.settings = st.settings or HS.defaults.make()
 	st.settings.loadout = HS.loadout.normalize(loadout or {}, st.settings.loadout)
-	st._settingsCopy = nil -- force syncShared() to deep-copy fresh settings
-	HS.srv.syncShared(st)
+	st._settingsCopy = nil -- force publish source to deep-copy fresh settings
+	HS.state.snapshot.syncFromSource(st)
 end
 
-function server.hs_start(playerId, settings)
-	HS.srv.rpc.start(playerId, settings)
-end
+function HS.srv.rpc.teamJoin(playerId, teamId)
+	local st = server.hs
+	if not st then return end
+	if st.phase ~= HS.const.PHASE_SETUP then return end
+	if not IsPlayerValid(playerId) then return end
+	if not (HS.srv and HS.srv.queueTeamJoin) then return end
 
-function server.hs_requestTag(playerId)
-	HS.srv.rpc.requestTag(playerId)
-end
-
-function server.hs_useAbility(playerId, abilityId)
-	HS.srv.rpc.useAbility(playerId, abilityId)
-end
-
-function server.hs_triggerSuperjump(playerId)
-	HS.srv.rpc.triggerSuperjump(playerId)
-end
-
-function server.hs_ability(playerId, abilityId, event)
-	HS.srv.rpc.ability(playerId, abilityId, event)
-end
-
-function server.hs_timeSync(playerId, seq, clientSentAt)
-	HS.srv.rpc.timeSync(playerId, seq, clientSentAt)
-end
-
-function server.hs_updateLoadout(playerId, loadout)
-	HS.srv.rpc.updateLoadout(playerId, loadout)
+	HS.srv.queueTeamJoin(playerId, teamId)
 end

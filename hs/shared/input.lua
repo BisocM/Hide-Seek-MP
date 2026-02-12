@@ -9,6 +9,9 @@ I.actions.tag = I.actions.tag or "interact"
 I.keys = I.keys or {}
 I.keys.abilityDash = I.keys.abilityDash or "q"
 I.keys.abilitySuperjump = I.keys.abilitySuperjump or "f"
+I.keys.abilitySlot3 = I.keys.abilitySlot3 or "x"
+I.keys.abilitySlot4 = I.keys.abilitySlot4 or "c"
+I.keys.abilitySlot5 = I.keys.abilitySlot5 or "v"
 I.keys.adminMenu = I.keys.adminMenu or "f6"
 
 function I.pressed(actionName)

@@ -150,7 +150,7 @@ function M.tick(state, _dt)
 			loadout = state.settings.loadout
 		end
 		state._settingsCopy = nil
-		HS.srv.syncShared(state)
+		HS.state.snapshot.syncFromSource(state)
 	end
 
 	local toolsKey = ""

@@ -4,6 +4,7 @@
 #include "ui.lua"
 
 HS = HS or {}
+HS.srv = HS.srv or {}
 
 local function hsT(key, params)
 	if HS and HS.t then
@@ -17,6 +18,11 @@ local function hsText(text, params)
 		return hsT(text, params)
 	end
 	return tostring(text or "")
+end
+
+local function requestTeamJoin(teamId)
+	local localId = (HS.engine and HS.engine.localPlayerId and HS.engine.localPlayerId()) or GetLocalPlayer()
+	HS.engine.serverCall("server._teamsJoinTeam", localId, teamId)
 end
 
 _WAITING = 1
@@ -374,14 +380,31 @@ function _teamsWouldExceedMaxDiff(playerId, teamId)
     return required > unassigned
 end
 
-function server._teamsJoinTeam(playerId, teamId)
+function HS.srv.queueTeamJoin(playerId, teamId)
+    playerId = tonumber(playerId) or 0
+    teamId = tonumber(teamId) or 0
+    if playerId <= 0 then
+        return false
+    end
+    if teamId < 0 then
+        teamId = 0
+    end
+
     if shared._teamState.state and shared._teamState.state >= _LOCKED then
-        return
+        return false
     end
+
+    local teamCount = #shared._teamState.teams
+    if teamId > teamCount then
+        return false
+    end
+
     if teamId > 0 and _teamsWouldExceedMaxDiff(playerId, teamId) then
-        return
+        return false
     end
-    _teamState.pendingTeamSwaps[1 + #_teamState.pendingTeamSwaps] = {playerId, teamId}
+
+    _teamState.pendingTeamSwaps[1 + #_teamState.pendingTeamSwaps] = { playerId, teamId }
+    return true
 end
 
 function _teamsAssignPlayers()
@@ -416,12 +439,7 @@ end
 function _teamsDrawTeamBox(teamId, width, height)
     UiPush()
         
-        local playerNames = {}
-
         local players = shared._teamState.teams[teamId].players;
-        for i=1,#players do
-            playerNames[1 + #playerNames] = GetPlayerName(players[i])
-        end
 
         local teamName = hsText(shared._teamState.teams[teamId].name)
         local color = shared._teamState.teams[teamId].color
@@ -484,14 +502,14 @@ function _teamsDrawTeamBox(teamId, width, height)
         local team = teamsGetTeamId(GetLocalPlayer())
         if team == teamId then
             if uiDrawSecondaryButton(hsT("hs.ui.teams.leave"), width - 2 * 8, shared._teamState.state and shared._teamState.state >= _LOCKED) then
-                ServerCall("server._teamsJoinTeam", GetLocalPlayer(), 0)
+                requestTeamJoin(0)
             end
         else
             local locked = shared._teamState.state and shared._teamState.state >= _LOCKED
             local tooImbalanced = _teamsWouldExceedMaxDiff(GetLocalPlayer(), teamId)
 
             if uiDrawSecondaryButton(hsT("hs.ui.teams.join"), width - 2 * 8, team ~= 0 or locked or tooImbalanced) then
-                ServerCall("server._teamsJoinTeam", GetLocalPlayer(), teamId)
+                requestTeamJoin(teamId)
             end
         end
     UiPop()

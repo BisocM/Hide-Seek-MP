@@ -33,11 +33,6 @@ function hudInit(useDamageIndicators)
 	shared._hud.gameIsSetup = false
 end
 
---- Enable the "Unstuck" pause menu button (server).
-function hudAddUnstuckButton()
-	shared._hud.enableUnstuck = true
-end
-
 --- Process HUD-related events and health bar updates (client).
 function hudTick(dt)
 	local c = GetEventCount("playerhurt")
@@ -78,21 +73,6 @@ function hudTick(dt)
 		hbData.health = currentHealth
 	end
 
-	if shared._hud.enableUnstuck then
-		if lastUnstuckTime == nil then
-			lastUnstuckTime = -10.0
-		end
-
-		local delta = GetTime() - lastUnstuckTime
-		if delta < 10.0 then
-			PauseMenuButton("Unstuck ("..(math.floor(10.0-delta)+1)..")", "bottom_bar", true)
-		else
-			if PauseMenuButton("Unstuck") then
-				lastUnstuckTime = GetTime()
-				ServerCall("server._unstuck", GetLocalPlayer())
-			end
-		end
-	end
 end
 
 
@@ -682,14 +662,14 @@ function hudDrawPlayerWorldMarkers(players, lineOfSightRequired, maxRange, color
 	for i=1,#players do
 		local p = players[i]
 		if not IsPlayerLocal(p) and GetPlayerHealth(p) > 0 and not IsPlayerDisabled(p) and IsPlayerValid(p) then
-			markers[1 + #markers] = { 
-				pos=VecAdd(GetPlayerTransform(p).pos, Vec(0, 1.0, 0)), 
-				offset = Vec(0, 1.2, 0),
-				color= color or COLOR_WHITE,
-				label=GetPlayerName(p),
-				lineOfSightRequired = lineOfSightRequired,
-				maxRange = maxRange or 9999.0,
-				icon = "ui/hud/team-direction.png",
+				markers[1 + #markers] = { 
+					pos=VecAdd(GetPlayerTransform(p).pos, Vec(0, 1.0, 0)), 
+					offset = Vec(0, 1.2, 0),
+					color= color or COLOR_WHITE,
+					label=(HS.engine and HS.engine.playerName and HS.engine.playerName(p)) or GetPlayerName(p),
+					lineOfSightRequired = lineOfSightRequired,
+					maxRange = maxRange or 9999.0,
+					icon = "ui/hud/team-direction.png",
 				drawIconInView = false,
 				player = p
 			}
@@ -1050,10 +1030,9 @@ function hudDrawGameSetup(settings)
 			UiTranslate(0, 40 + 10)
 		end
 
-			if uiDrawPrimaryButton(hsT("hs.ui.hostMenu.start"), 290) then
-				ServerCall("server.hudPlayPressed")
-				playPressed = true
-			end
+				if uiDrawPrimaryButton(hsT("hs.ui.hostMenu.start"), 290) then
+					playPressed = true
+				end
 		
 		
 		UiPop()
@@ -1669,11 +1648,6 @@ function _drawToolTip(title, info)
 	UiText(info)
 end
 
-function server.hudPlayPressed()
-	shared._hud.gameIsSetup = true
-end
-
-
 --- Draw banners (client).
 function hudDrawBanner(dt)
 	local banner = _hud.bannerQueue[1]
@@ -1807,10 +1781,6 @@ end
 
 function _isTextValid(text)
 	return text ~= nil and text ~= ""
-end
-
-function server._unstuck(player) 
-	SetPlayerHealth(0, player)
 end
 
 function _drawBoard(title, columns, groups, centered, compact, numbered)

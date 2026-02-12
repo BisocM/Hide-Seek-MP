@@ -19,6 +19,14 @@ local function hsText(text, params)
 	return tostring(text or "")
 end
 
+local function requestTeamJoin(teamId)
+	local localId = (HS.engine and HS.engine.localPlayerId and HS.engine.localPlayerId()) or GetLocalPlayer()
+	local rpc = HS.engine and HS.engine.serverRpc
+	if rpc and rpc.teamsJoinTeam then
+		rpc.teamsJoinTeam(localId, teamId)
+	end
+end
+
 _WAITING = 1
 _COUNTDOWN = 2
 _LOCKED = 3
@@ -375,6 +383,7 @@ function _teamsWouldExceedMaxDiff(playerId, teamId)
 end
 
 function server._teamsJoinTeam(playerId, teamId)
+    teamId = tonumber(teamId) or 0
     if shared._teamState.state and shared._teamState.state >= _LOCKED then
         return
     end
@@ -484,14 +493,14 @@ function _teamsDrawTeamBox(teamId, width, height)
         local team = teamsGetTeamId(GetLocalPlayer())
         if team == teamId then
             if uiDrawSecondaryButton(hsT("hs.ui.teams.leave"), width - 2 * 8, shared._teamState.state and shared._teamState.state >= _LOCKED) then
-                ServerCall("server._teamsJoinTeam", GetLocalPlayer(), 0)
+                requestTeamJoin(0)
             end
         else
             local locked = shared._teamState.state and shared._teamState.state >= _LOCKED
             local tooImbalanced = _teamsWouldExceedMaxDiff(GetLocalPlayer(), teamId)
 
             if uiDrawSecondaryButton(hsT("hs.ui.teams.join"), width - 2 * 8, team ~= 0 or locked or tooImbalanced) then
-                ServerCall("server._teamsJoinTeam", GetLocalPlayer(), teamId)
+                requestTeamJoin(teamId)
             end
         end
     UiPop()

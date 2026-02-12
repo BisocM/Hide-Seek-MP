@@ -109,12 +109,13 @@ end
 local function pushToServer(vm)
 	if not vm or not vm.me or vm.me.isHost ~= true then return end
 	if not (HS.loadout and HS.loadout.normalize) then return end
-	if not (HS.engine and HS.engine.serverCall) then return end
+	local rpc = HS.engine and HS.engine.serverRpc
+	if not (rpc and rpc.updateLoadout) then return end
 
 	local lo = HS.loadout.normalize(A._state.edit or {})
 	A._state.edit = lo
 
-	HS.engine.serverCall("server.hs_updateLoadout", vm.me.id, lo)
+	rpc.updateLoadout(vm.me.id, lo)
 	if HS.loadout and HS.loadout.writePersist then
 		HS.loadout.writePersist(HS.persist, lo)
 	end

@@ -113,9 +113,86 @@ function E.clientCall(targetPlayerId, fnName, ...)
 	return pcall(ClientCall, targetPlayerId, fnName, ...) == true
 end
 
-function E.serverCall(fnName, ...)
+E.serverRpc = E.serverRpc or {}
+local SR = E.serverRpc
+
+function SR.hsStart(playerId, settings)
 	if not isFn(ServerCall) then return false end
-	return pcall(ServerCall, fnName, ...) == true
+	ServerCall("server.hs_start", playerId, settings)
+	return true
+end
+
+function SR.requestTag(playerId)
+	if not isFn(ServerCall) then return false end
+	ServerCall("server.hs_requestTag", playerId)
+	return true
+end
+
+function SR.ability(playerId, abilityId, event)
+	if not isFn(ServerCall) then return false end
+	ServerCall("server.hs_ability", playerId, abilityId, event)
+	return true
+end
+
+function SR.triggerSuperjump(playerId)
+	if not isFn(ServerCall) then return false end
+	ServerCall("server.hs_triggerSuperjump", playerId)
+	return true
+end
+
+function SR.timeSync(playerId, seq, clientSentAt)
+	if not isFn(ServerCall) then return false end
+	ServerCall("server.hs_timeSync", playerId, seq, clientSentAt)
+	return true
+end
+
+function SR.updateLoadout(playerId, loadout)
+	if not isFn(ServerCall) then return false end
+	ServerCall("server.hs_updateLoadout", playerId, loadout)
+	return true
+end
+
+function SR.teamsJoinTeam(playerId, teamId)
+	if not isFn(ServerCall) then return false end
+	ServerCall("server._teamsJoinTeam", playerId, teamId)
+	return true
+end
+
+function SR.hudPlayPressed(playerId, settings)
+	if not isFn(ServerCall) then return false end
+	ServerCall("server.hudPlayPressed", playerId, settings)
+	return true
+end
+
+function SR.unstuck(playerId)
+	if not isFn(ServerCall) then return false end
+	ServerCall("server._unstuck", playerId)
+	return true
+end
+
+-- Compatibility adapter: preserve old callsites but route to literal-name RPC methods.
+function E.serverCall(fnName, ...)
+	fnName = tostring(fnName or "")
+	if fnName == "server.hs_start" then
+		return SR.hsStart(...)
+	elseif fnName == "server.hs_requestTag" then
+		return SR.requestTag(...)
+	elseif fnName == "server.hs_ability" then
+		return SR.ability(...)
+	elseif fnName == "server.hs_triggerSuperjump" then
+		return SR.triggerSuperjump(...)
+	elseif fnName == "server.hs_timeSync" then
+		return SR.timeSync(...)
+	elseif fnName == "server.hs_updateLoadout" then
+		return SR.updateLoadout(...)
+	elseif fnName == "server._teamsJoinTeam" then
+		return SR.teamsJoinTeam(...)
+	elseif fnName == "server.hudPlayPressed" then
+		return SR.hudPlayPressed(...)
+	elseif fnName == "server._unstuck" then
+		return SR.unstuck(...)
+	end
+	return false
 end
 
 local function clearArray(t)

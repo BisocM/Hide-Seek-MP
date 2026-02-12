@@ -20,7 +20,12 @@ function HS.cli.pregame.draw(dt, _ctx, _vm)
 		local settings = (HS.settings and HS.settings.schema and HS.settings.schema()) or {}
 		if hudDrawGameSetup(settings) then
 			local payload = (HS.settings and HS.settings.readHostStartPayload and HS.settings.readHostStartPayload(HS.persist)) or {}
-			HS.engine.serverCall("server.hs_start", HS.engine.localPlayerId(), payload)
+			local localId = (HS.engine and HS.engine.localPlayerId and HS.engine.localPlayerId())
+				or ((type(GetLocalPlayer) == "function" and GetLocalPlayer()) or 0)
+			local rpc = HS.engine and HS.engine.serverRpc
+			if rpc and rpc.hsStart then
+				rpc.hsStart(localId, payload)
+			end
 		end
 	end
 end

@@ -89,7 +89,10 @@ function hudTick(dt)
 		else
 			if PauseMenuButton("Unstuck") then
 				lastUnstuckTime = GetTime()
-				ServerCall("server._unstuck", GetLocalPlayer())
+				local rpc = HS.engine and HS.engine.serverRpc
+				if rpc and rpc.unstuck then
+					rpc.unstuck(GetLocalPlayer())
+				end
 			end
 		end
 	end
@@ -1051,7 +1054,6 @@ function hudDrawGameSetup(settings)
 		end
 
 			if uiDrawPrimaryButton(hsT("hs.ui.hostMenu.start"), 290) then
-				ServerCall("server.hudPlayPressed")
 				playPressed = true
 			end
 		
@@ -1669,10 +1671,19 @@ function _drawToolTip(title, info)
 	UiText(info)
 end
 
-function server.hudPlayPressed()
-	shared._hud.gameIsSetup = true
+function server.hudPlayPressed(playerId, settings, ...)
+	local extraPayload = select(1, ...)
+	if type(settings) ~= "table" and type(extraPayload) == "table" then
+		settings = extraPayload
+	end
+	if HS and HS.srv and HS.srv.rpc and HS.srv.rpc.start then
+		HS.srv.rpc.start(playerId, settings)
+		return
+	end
+	if shared and shared._hud then
+		shared._hud.gameIsSetup = true
+	end
 end
-
 
 --- Draw banners (client).
 function hudDrawBanner(dt)

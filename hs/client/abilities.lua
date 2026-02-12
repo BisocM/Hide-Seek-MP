@@ -201,7 +201,10 @@ function C.tick(_dt, _ctx, vm)
 
 		if HS.input and HS.input.keyPressed and HS.input.keyPressed(def.key) then
 			if cd <= 0 and not armed then
-				HS.engine.serverCall("server.hs_ability", vm.me.id, def.id, "use")
+				local rpc = HS.engine and HS.engine.serverRpc
+				if rpc and rpc.ability then
+					rpc.ability(vm.me.id, def.id, "use")
+				end
 			end
 		end
 
@@ -210,7 +213,10 @@ function C.tick(_dt, _ctx, vm)
 			local event = tostring(def.trigger.event or "")
 			if action ~= "" and event ~= "" then
 				if HS.engine and HS.engine.inputPressed and HS.engine.inputPressed(action) then
-					HS.engine.serverCall("server.hs_ability", vm.me.id, def.id, event)
+					local rpc = HS.engine and HS.engine.serverRpc
+					if rpc and rpc.ability then
+						rpc.ability(vm.me.id, def.id, event)
+					end
 				end
 			end
 		end

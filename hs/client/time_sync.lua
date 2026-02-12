@@ -60,8 +60,9 @@ function TS.tick(_dt, ctx, sh)
 	local seq = TS._seq
 	TS._pending[seq] = t
 
-	if HS.engine and HS.engine.serverCall then
-		HS.engine.serverCall("server.hs_timeSync", pid, seq, t)
+	local rpc = HS.engine and HS.engine.serverRpc
+	if rpc and rpc.timeSync then
+		rpc.timeSync(pid, seq, t)
 	end
 
 	TS._sent = (tonumber(TS._sent) or 0) + 1

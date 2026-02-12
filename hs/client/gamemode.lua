@@ -85,7 +85,10 @@ function HS.cli.app.tick(dt)
 	if not vm.me or vm.me.team ~= HS.const.TEAM_SEEKERS or vm.me.out then return end
 
 	if HS.input and HS.input.pressed and HS.input.pressed("tag") then
-		HS.engine.serverCall("server.hs_requestTag", vm.me.id)
+		local rpc = HS.engine and HS.engine.serverRpc
+		if rpc and rpc.requestTag then
+			rpc.requestTag(vm.me.id)
+		end
 	end
 end
 

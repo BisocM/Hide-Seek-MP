@@ -6,12 +6,24 @@ HS.srv.rpc = HS.srv.rpc or {}
 function HS.srv.rpc.start(playerId, settings)
 	local st = server.hs
 	if not st then return end
-	if not IsPlayerValid(playerId) then return end
-	if not IsPlayerHost(playerId) then return end
 	if st.phase ~= HS.const.PHASE_SETUP then return end
+	if type(settings) ~= "table" then
+		local fallback = nil
+		if HS.settings and HS.settings.readHostStartPayload then
+			fallback = HS.settings.readHostStartPayload(HS.persist)
+		end
+		if type(fallback) == "table" then
+			settings = fallback
+		else
+			settings = nil
+		end
+	end
 
 	HS.srv.app.applyHostSettings(st, settings)
 	HS.srv.syncShared(st)
+	if shared and shared._hud then
+		shared._hud.gameIsSetup = true
+	end
 
 	teamsStart(false)
 end
@@ -72,8 +84,17 @@ function HS.srv.rpc.updateLoadout(playerId, loadout)
 	HS.srv.syncShared(st)
 end
 
-function server.hs_start(playerId, settings)
-	HS.srv.rpc.start(playerId, settings)
+function server.hs_start(playerId, settings, ...)
+	local extraPayload = select(1, ...)
+	-- Tolerate callers that send only settings and clients/runtimes that shift payload by one argument.
+	if type(settings) ~= "table" and type(extraPayload) == "table" then
+		settings = extraPayload
+	end
+	if type(playerId) == "table" and settings == nil then
+		settings = playerId
+		playerId = 0
+	end
+	HS.srv.rpc.start(playerId, settings, ...)
 end
 
 function server.hs_requestTag(playerId)

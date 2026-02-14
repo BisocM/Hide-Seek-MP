@@ -29,6 +29,9 @@ function S.defaults()
 end
 
 local function clamp(v, a, b)
+	if HS.util and HS.util.math and HS.util.math.clamp then
+		return HS.util.math.clamp(tonumber(v) or 0, a, b)
+	end
 	return HS.util.clamp(tonumber(v) or 0, a, b)
 end
 

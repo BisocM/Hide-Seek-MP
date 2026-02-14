@@ -1,74 +1,86 @@
-
 HS = HS or {}
 HS.persist = HS.persist or {}
 
 local P = HS.persist
 
-local function isFn(f) return type(f) == "function" end
-
-function P.has(key)
-	if not isFn(HasKey) then
-		return nil
-	end
-	local ok, v = pcall(HasKey, key)
-	return ok and v == true
+local function engine()
+	return HS.engine or {}
 end
 
-local function safeGet(fn, key, default)
-	if not isFn(fn) then return default end
-	local has = P.has(key)
-	if has == false then return default end
-	local ok, v = pcall(fn, key)
-	if ok and v ~= nil then return v end
-	return default
+function P.has(key)
+	local e = engine()
+	if not e.hasKey then
+		return nil
+	end
+	return e.hasKey(key)
 end
 
 function P.getFloat(key, default)
-	return tonumber(safeGet(GetFloat, key, default)) or (tonumber(default) or 0)
+	local e = engine()
+	local has = P.has(key)
+	if has == false then return tonumber(default) or 0 end
+	if e.getFloat then
+		return tonumber(e.getFloat(key, default)) or (tonumber(default) or 0)
+	end
+	return tonumber(default) or 0
 end
 
 function P.getInt(key, default)
-	return math.floor(tonumber(safeGet(GetInt, key, default)) or (tonumber(default) or 0))
+	local e = engine()
+	local has = P.has(key)
+	if has == false then return math.floor(tonumber(default) or 0) end
+	if e.getInt then
+		return math.floor(tonumber(e.getInt(key, default)) or (tonumber(default) or 0))
+	end
+	return math.floor(tonumber(default) or 0)
 end
 
 function P.getString(key, default)
-	local v = safeGet(GetString, key, default)
-	local s = tostring(v or "")
-	if s == "" and default ~= nil then
-		return tostring(default)
+	local e = engine()
+	local has = P.has(key)
+	if has == false then return tostring(default or "") end
+	if e.getString then
+		local s = tostring(e.getString(key, default) or "")
+		if s == "" and default ~= nil then
+			return tostring(default)
+		end
+		return s
 	end
-	return s
+	return tostring(default or "")
 end
 
 function P.getBool(key, default)
-	if isFn(GetBool) then
-		local v = safeGet(GetBool, key, default == true)
-		return v == true
+	local e = engine()
+	local has = P.has(key)
+	if has == false then return default == true end
+	if e.getBool then
+		return e.getBool(key, default == true) == true
 	end
 	return P.getInt(key, default == true and 1 or 0) == 1
 end
 
-local function safeSet(fn, key, value)
-	if not isFn(fn) then return false end
-	local ok = pcall(fn, key, value)
-	return ok == true
-end
-
 function P.setFloat(key, value)
-	return safeSet(SetFloat, key, tonumber(value) or 0)
+	local e = engine()
+	if not e.setFloat then return false end
+	return e.setFloat(key, tonumber(value) or 0) == true
 end
 
 function P.setInt(key, value)
-	return safeSet(SetInt, key, math.floor(tonumber(value) or 0))
+	local e = engine()
+	if not e.setInt then return false end
+	return e.setInt(key, math.floor(tonumber(value) or 0)) == true
 end
 
 function P.setString(key, value)
-	return safeSet(SetString, key, tostring(value or ""))
+	local e = engine()
+	if not e.setString then return false end
+	return e.setString(key, tostring(value or "")) == true
 end
 
 function P.setBool(key, value)
-	if isFn(SetBool) then
-		return safeSet(SetBool, key, value == true)
+	local e = engine()
+	if e.setBool then
+		return e.setBool(key, value == true) == true
 	end
 	return P.setInt(key, value == true and 1 or 0)
 end

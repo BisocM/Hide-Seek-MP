@@ -134,7 +134,7 @@ local function setActiveMovement(playerId, phase, teamId)
 		SetPlayerParam("disableinteract", false, playerId)
 	end
 	SetPlayerWalkingSpeed(7.0, playerId)
-	SetPlayerCrouchSpeedScale(3.0, playerId)
+	SetPlayerCrouchSpeedScale(1.0, playerId)
 end
 
 local function runDash(state, playerId)

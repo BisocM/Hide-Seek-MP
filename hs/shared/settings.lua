@@ -13,7 +13,7 @@ function S.defaults()
 		intermissionSeconds = 10,
 		roundsToPlay = 5,
 		infectionMode = true,
-		swapTeamsEachRound = true,
+		teamRotation = "swap",
 		maxTeamDiff = 1,
 		seekerGraceSeconds = 5,
 		tagRangeMeters = 4.0,
@@ -75,7 +75,17 @@ function S.normalize(input, base)
 		intermissionSeconds = clamp(input.intermissionSeconds or base.intermissionSeconds, 10, 60),
 		roundsToPlay = clamp(input.roundsToPlay or base.roundsToPlay, 0, 100),
 		infectionMode = (input.infectionMode == true),
-		swapTeamsEachRound = (input.swapTeamsEachRound == true),
+		teamRotation = (function()
+			local r = input.teamRotation
+			if r == nil then
+				if input.swapTeamsEachRound == true then return "swap"
+				elseif input.swapTeamsEachRound == false then return "none"
+				else return base.teamRotation or "swap" end
+			end
+			if r == 2 or r == "shuffle" then return "shuffle" end
+			if r == 0 or r == "none" then return "none" end
+			return "swap"
+		end)(),
 		maxTeamDiff = clamp(input.maxTeamDiff or base.maxTeamDiff, 0, 10),
 		seekerGraceSeconds = clamp(input.seekerGraceSeconds or base.seekerGraceSeconds, 5, 20),
 		tagRangeMeters = clamp(input.tagRangeMeters or base.tagRangeMeters, 1.0, 20.0),
@@ -126,7 +136,7 @@ function S.schema()
 			title = t("hs.settings.group.teams"),
 			items = {
 				{ key = p .. "infectionMode", label = t("hs.settings.infectionMode.label"), info = t("hs.settings.infectionMode.info"), options = { { label = t("hs.common.on"), value = 1 }, { label = t("hs.common.off"), value = 0 } } },
-				{ key = p .. "swapTeamsEachRound", label = t("hs.settings.swapTeamsEachRound.label"), info = t("hs.settings.swapTeamsEachRound.info"), options = { { label = t("hs.common.on"), value = 1 }, { label = t("hs.common.off"), value = 0 } } },
+				{ key = p .. "teamRotation", label = t("hs.settings.teamRotation.label"), info = t("hs.settings.teamRotation.info"), options = { { label = t("hs.settings.teamRotation.swap"), value = 1 }, { label = t("hs.settings.teamRotation.shuffle"), value = 2 }, { label = t("hs.common.off"), value = 0 } } },
 				{ key = p .. "maxTeamDiff", label = t("hs.settings.maxTeamDiff.label"), info = t("hs.settings.maxTeamDiff.info"), options = { { label = "0", value = 0 }, { label = "1", value = 1 }, { label = "2", value = 2 }, { label = "3", value = 3 } } },
 			},
 		},
@@ -166,7 +176,7 @@ function S.ensureSavegameDefaults(persist)
 	ns.ensureFloat("intermissionSeconds", d.intermissionSeconds)
 	ns.ensureFloat("roundsToPlay", d.roundsToPlay)
 	ns.ensureInt("infectionMode", d.infectionMode and 1 or 0)
-	ns.ensureInt("swapTeamsEachRound", d.swapTeamsEachRound and 1 or 0)
+	ns.ensureInt("teamRotation", d.teamRotation == "shuffle" and 2 or (d.teamRotation == "none" and 0 or 1))
 	ns.ensureFloat("maxTeamDiff", d.maxTeamDiff)
 	local grace = ns.ensureFloat("seekerGraceSeconds", d.seekerGraceSeconds)
 	if (tonumber(grace) or 0) < 5 then
@@ -196,7 +206,7 @@ function S.readHostStartPayload(persist)
 		intermissionSeconds = readNumber(ns, "intermissionSeconds", d.intermissionSeconds),
 		roundsToPlay = readNumber(ns, "roundsToPlay", d.roundsToPlay),
 		infectionMode = readBool01(ns, "infectionMode", d.infectionMode),
-		swapTeamsEachRound = readBool01(ns, "swapTeamsEachRound", d.swapTeamsEachRound),
+		teamRotation = readNumber(ns, "teamRotation", 1),
 		maxTeamDiff = readNumber(ns, "maxTeamDiff", d.maxTeamDiff),
 		seekerGraceSeconds = readNumber(ns, "seekerGraceSeconds", d.seekerGraceSeconds),
 		tagRangeMeters = readNumber(ns, "tagRangeMeters", d.tagRangeMeters),

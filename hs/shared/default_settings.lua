@@ -12,7 +12,7 @@ function HS.defaults.make()
 		intermissionSeconds = 10,
 		roundsToPlay = 5,
 		infectionMode = true,
-		swapTeamsEachRound = true,
+		teamRotation = "swap",
 		maxTeamDiff = 1,
 		seekerGraceSeconds = 5,
 		tagRangeMeters = 4.0,

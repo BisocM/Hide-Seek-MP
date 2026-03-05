@@ -283,7 +283,10 @@ function T.reduce(state, tickInput, ctx)
 				events[#events + 1] = E.clientToast({ key = "hs.toast.matchComplete" }, 2.2, nil, 0)
 				return st, events
 			end
-			if st.settings and st.settings.swapTeamsEachRound == true then
+			local rot = st.settings and st.settings.teamRotation or "swap"
+			if rot == "shuffle" then
+				I.shuffleTeams(st)
+			elseif rot == "swap" then
 				I.swapTeams(st)
 			end
 			I.ensureRoundTeams(st)

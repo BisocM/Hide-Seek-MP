@@ -350,3 +350,34 @@ function I.swapTeams(st)
 		end
 	end
 end
+
+function I.shuffleTeams(st)
+	local ids = {}
+	local seekerCount = 0
+	for _, pid in ipairs(M.sortedPlayerIds(st)) do
+		local p = st.players[pid]
+		if p and (p.baseTeam == HS.const.TEAM_SEEKERS or p.baseTeam == HS.const.TEAM_HIDERS) then
+			ids[#ids + 1] = pid
+			if p.baseTeam == HS.const.TEAM_SEEKERS then
+				seekerCount = seekerCount + 1
+			end
+		end
+	end
+	if #ids < 2 then return end
+	-- Fisher-Yates shuffle
+	for i = #ids, 2, -1 do
+		local j = math.random(1, i)
+		ids[i], ids[j] = ids[j], ids[i]
+	end
+	-- First seekerCount become seekers, rest become hiders
+	for i, pid in ipairs(ids) do
+		local p = st.players[pid]
+		if i <= seekerCount then
+			p.baseTeam = HS.const.TEAM_SEEKERS
+		else
+			p.baseTeam = HS.const.TEAM_HIDERS
+		end
+		p.team = p.baseTeam
+		p.ready = false
+	end
+end

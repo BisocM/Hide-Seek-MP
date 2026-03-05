@@ -7,16 +7,8 @@ I.defaultLanguage = I.defaultLanguage or "en"
 I.language = I.language or nil
 
 I.detect = I.detect or function()
-	local langId = nil
-	if type(UiGetLanguage) == "function" then
-		local ok, v = pcall(UiGetLanguage)
-		if ok then langId = tonumber(v) end
-	end
-	if langId == nil and type(GetInt) == "function" then
-		local ok, v = pcall(GetInt, "options.language")
-		if ok then langId = tonumber(v) end
-	end
-	langId = math.floor(langId or 0)
+	local langId = (HS.engine and HS.engine.languageId and HS.engine.languageId()) or 0
+	langId = math.floor(tonumber(langId) or 0)
 
 	if langId == 7 then return "ru" end
 	return "en"
@@ -53,9 +45,18 @@ I.strings = I.strings or {
 		["hs.toast.seekStarted"] = "Seek phase started!",
 		["hs.toast.roundOver"] = "Round over.",
 		["hs.toast.matchComplete"] = "Match complete. Returning to setup.",
+		["hs.toast.hostOnly"] = "Host only action.",
+		["hs.toast.teamImbalance"] = "That team would exceed max difference.",
 
 		["hs.toast.taggingOffEliminate"] = "Tagging is off. Eliminate hiders to catch.",
 		["hs.toast.noHiderInRange"] = "No hider in range.",
+		["hs.toast.mimicNeedDynamicProp"] = "Aim at a dynamic prop to mimic.",
+		["hs.toast.mimicInvalidTarget"] = "That target cannot be mimicked.",
+		["hs.toast.mimicTooComplex"] = "That prop is too complex to mimic.",
+		["hs.toast.mimicUnavailable"] = "Mimic failed. Try another prop.",
+		["hs.ui.mimic.active"] = "Mimic mode active",
+		["hs.ui.mimic.confirm"] = "Press {key} again to transform into highlighted prop",
+		["hs.ui.mimic.cancel"] = "Press {key} again without a valid target to cancel",
 
 		["hs.ui.pickRole.tagPrompt"] = "Press E to tag",
 		["hs.ui.pickRole.eliminatePrompt"] = "Eliminate to catch",
@@ -120,7 +121,7 @@ I.strings = I.strings or {
 		["hs.settings.allowHidersKillSeekers.label"] = "Hiders can kill seekers",
 		["hs.settings.allowHidersKillSeekers.info"] = "If enabled, hiders can eliminate seekers by damage. If disabled, damage from hiders is ignored (seekers can still die to environment/suicide).",
 		["hs.settings.hiderAbilitiesEnabled.label"] = "Hider abilities",
-		["hs.settings.hiderAbilitiesEnabled.info"] = "Enable hider abilities (dash/super jump).",
+		["hs.settings.hiderAbilitiesEnabled.info"] = "Enable hider abilities (dash/super jump/mimic).",
 		["hs.settings.healthRegenEnabled.label"] = "Health regeneration",
 		["hs.settings.healthRegenEnabled.info"] = "Enable health regeneration for active players.",
 		["hs.settings.hiderTrailEnabled.label"] = "Hider trail",
@@ -135,8 +136,11 @@ I.strings = I.strings or {
 		["hs.ui.spectating.subtitle"] = "Wait for the next round.",
 		["hs.ui.spectating.following"] = "Spectating {name}",
 		["hs.ui.spectating.noTeammate"] = "No active teammate to spectate.",
+		["hs.ui.spectating.cycleHint"] = "Mouse wheel: switch teammate",
 
 		["hs.banner.victory"] = "{winner} won!",
+		["hs.ui.victory.seekers"] = "Seekers win!",
+		["hs.ui.victory.hiders"] = "Hiders win!",
 
 		["hs.ui.label.round"] = "Round",
 		["hs.ui.label.phase"] = "Phase",
@@ -178,9 +182,18 @@ I.strings = I.strings or {
 		["hs.toast.seekStarted"] = "Фаза поиска началась!",
 		["hs.toast.roundOver"] = "Раунд завершён.",
 		["hs.toast.matchComplete"] = "Матч завершён. Возврат в настройку.",
+		["hs.toast.hostOnly"] = "Действие доступно только хосту.",
+		["hs.toast.teamImbalance"] = "Эта команда превысит допустимую разницу.",
 
 		["hs.toast.taggingOffEliminate"] = "Отмечание отключено. Устраняйте прячущихся, чтобы поймать.",
 		["hs.toast.noHiderInRange"] = "Нет прячущегося в радиусе.",
+		["hs.toast.mimicNeedDynamicProp"] = "Наведитесь на динамический объект, чтобы замаскироваться.",
+		["hs.toast.mimicInvalidTarget"] = "Эту цель нельзя использовать для маскировки.",
+		["hs.toast.mimicTooComplex"] = "Этот объект слишком сложный для маскировки.",
+		["hs.toast.mimicUnavailable"] = "Маскировка не удалась. Выберите другой объект.",
+		["hs.ui.mimic.active"] = "Режим маскировки активен",
+		["hs.ui.mimic.confirm"] = "Нажмите {key} ещё раз, чтобы превратиться в выделенный объект",
+		["hs.ui.mimic.cancel"] = "Нажмите {key} ещё раз без подходящей цели, чтобы отменить",
 
 		["hs.ui.pickRole.tagPrompt"] = "Нажмите E, чтобы поймать",
 		["hs.ui.pickRole.eliminatePrompt"] = "Устраните, чтобы поймать",
@@ -245,7 +258,7 @@ I.strings = I.strings or {
 		["hs.settings.allowHidersKillSeekers.label"] = "Прячущиеся могут убивать искателей",
 		["hs.settings.allowHidersKillSeekers.info"] = "Если включено, прячущиеся могут устранять искателей уроном. Если выключено, урон от прячущихся игнорируется (искатели всё ещё могут погибнуть от окружения/самоподрыва).",
 		["hs.settings.hiderAbilitiesEnabled.label"] = "Способности прячущихся",
-		["hs.settings.hiderAbilitiesEnabled.info"] = "Включить способности прячущихся (рывок/суперпрыжок).",
+		["hs.settings.hiderAbilitiesEnabled.info"] = "Включить способности прячущихся (рывок/суперпрыжок/маскировка).",
 		["hs.settings.healthRegenEnabled.label"] = "Регенерация здоровья",
 		["hs.settings.healthRegenEnabled.info"] = "Включить регенерацию здоровья для активных игроков.",
 		["hs.settings.hiderTrailEnabled.label"] = "След прячущихся",
@@ -260,8 +273,11 @@ I.strings = I.strings or {
 		["hs.ui.spectating.subtitle"] = "Ждите следующего раунда.",
 		["hs.ui.spectating.following"] = "Наблюдение: {name}",
 		["hs.ui.spectating.noTeammate"] = "Нет активного напарника для наблюдения.",
+		["hs.ui.spectating.cycleHint"] = "Колесо мыши: сменить напарника",
 
 		["hs.banner.victory"] = "{winner} победили!",
+		["hs.ui.victory.seekers"] = "Искатели победили!",
+		["hs.ui.victory.hiders"] = "Прячущиеся победили!",
 
 		["hs.ui.label.round"] = "Раунд",
 		["hs.ui.label.phase"] = "Фаза",

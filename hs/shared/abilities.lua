@@ -7,6 +7,7 @@ local A = HS.abilities
 A.ids = A.ids or {
 	dash = "dash",
 	superjump = "superjump",
+	mimicProp = "mimic_prop",
 }
 
 A._defs = A._defs or {}
@@ -85,3 +86,4 @@ end
 
 #include "abilities/dash.lua"
 #include "abilities/superjump.lua"
+#include "abilities/mimic_prop.lua"

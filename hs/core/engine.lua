@@ -21,8 +21,33 @@ function E.timeStep()
 	return 0
 end
 
+function E.languageId()
+	if isFn(UiGetLanguage) then
+		local ok, v = pcall(UiGetLanguage)
+		if ok then
+			return tonumber(v) or 0
+		end
+	end
+	if isFn(GetInt) then
+		local ok, v = pcall(GetInt, "options.language")
+		if ok then
+			return tonumber(v) or 0
+		end
+	end
+	return 0
+end
+
 function E.isPlayerValid(playerId)
 	return type(playerId) == "number" and playerId > 0 and isFn(IsPlayerValid) and IsPlayerValid(playerId)
+end
+
+function E.isPlayerHost(playerId)
+	playerId = tonumber(playerId) or 0
+	if playerId <= 0 or not isFn(IsPlayerHost) then
+		return false
+	end
+	local ok, v = pcall(IsPlayerHost, playerId)
+	return ok and v == true
 end
 
 function E.localPlayerId()
@@ -34,14 +59,17 @@ function E.localPlayerId()
 end
 
 function E.playerName(playerId)
-	if not E.isPlayerValid(playerId) then return "?" end
+	playerId = tonumber(playerId) or 0
+	if playerId <= 0 then return "?" end
 	if not isFn(GetPlayerName) then return "?" end
 	local ok, name = pcall(GetPlayerName, playerId)
 	if ok then
 		local s = tostring(name or "")
-		if s ~= "" then return s end
+		if s ~= "" and s ~= "?" and string.upper(s) ~= "UNKNOWN" then
+			return s
+		end
 	end
-	return "?"
+	return "P" .. tostring(playerId)
 end
 
 function E.teamColor(teamId)
@@ -113,86 +141,97 @@ function E.clientCall(targetPlayerId, fnName, ...)
 	return pcall(ClientCall, targetPlayerId, fnName, ...) == true
 end
 
-E.serverRpc = E.serverRpc or {}
-local SR = E.serverRpc
+local _warnedUnknownServerCall = {}
 
-function SR.hsStart(playerId, settings)
+local function callServerLiteral(fnName, ...)
 	if not isFn(ServerCall) then return false end
-	ServerCall("server.hs_start", playerId, settings)
-	return true
-end
 
-function SR.requestTag(playerId)
-	if not isFn(ServerCall) then return false end
-	ServerCall("server.hs_requestTag", playerId)
-	return true
-end
+	if fnName == "server.hs_command" then
+		local playerId, envelope = ...
+		ServerCall("server.hs_command", playerId, envelope)
+		return true
+	end
 
-function SR.ability(playerId, abilityId, event)
-	if not isFn(ServerCall) then return false end
-	ServerCall("server.hs_ability", playerId, abilityId, event)
-	return true
-end
-
-function SR.triggerSuperjump(playerId)
-	if not isFn(ServerCall) then return false end
-	ServerCall("server.hs_triggerSuperjump", playerId)
-	return true
-end
-
-function SR.timeSync(playerId, seq, clientSentAt)
-	if not isFn(ServerCall) then return false end
-	ServerCall("server.hs_timeSync", playerId, seq, clientSentAt)
-	return true
-end
-
-function SR.updateLoadout(playerId, loadout)
-	if not isFn(ServerCall) then return false end
-	ServerCall("server.hs_updateLoadout", playerId, loadout)
-	return true
-end
-
-function SR.teamsJoinTeam(playerId, teamId)
-	if not isFn(ServerCall) then return false end
-	ServerCall("server._teamsJoinTeam", playerId, teamId)
-	return true
-end
-
-function SR.hudPlayPressed(playerId, settings)
-	if not isFn(ServerCall) then return false end
-	ServerCall("server.hudPlayPressed", playerId, settings)
-	return true
-end
-
-function SR.unstuck(playerId)
-	if not isFn(ServerCall) then return false end
-	ServerCall("server._unstuck", playerId)
-	return true
-end
-
--- Compatibility adapter: preserve old callsites but route to literal-name RPC methods.
-function E.serverCall(fnName, ...)
-	fnName = tostring(fnName or "")
-	if fnName == "server.hs_start" then
-		return SR.hsStart(...)
-	elseif fnName == "server.hs_requestTag" then
-		return SR.requestTag(...)
-	elseif fnName == "server.hs_ability" then
-		return SR.ability(...)
-	elseif fnName == "server.hs_triggerSuperjump" then
-		return SR.triggerSuperjump(...)
-	elseif fnName == "server.hs_timeSync" then
-		return SR.timeSync(...)
-	elseif fnName == "server.hs_updateLoadout" then
-		return SR.updateLoadout(...)
-	elseif fnName == "server._teamsJoinTeam" then
-		return SR.teamsJoinTeam(...)
-	elseif fnName == "server.hudPlayPressed" then
-		return SR.hudPlayPressed(...)
-	elseif fnName == "server._unstuck" then
-		return SR.unstuck(...)
+	if _warnedUnknownServerCall[fnName] ~= true then
+		_warnedUnknownServerCall[fnName] = true
+		if HS.log and HS.log.warn then
+			HS.log.warn("Blocked dynamic server call target", { fnName = tostring(fnName or "") })
+		end
 	end
 	return false
+end
+
+function E.serverCall(fnName, ...)
+	return callServerLiteral(fnName, ...)
+end
+
+function E.hasKey(key)
+	if not isFn(HasKey) then return nil end
+	local ok, v = pcall(HasKey, key)
+	if not ok then return nil end
+	return v == true
+end
+
+function E.listKeys(prefix)
+	if not isFn(ListKeys) then return nil end
+	local ok, v = pcall(ListKeys, prefix)
+	if not ok or type(v) ~= "table" then return nil end
+	return v
+end
+
+function E.getFloat(key, default)
+	if not isFn(GetFloat) then return tonumber(default) or 0 end
+	local ok, v = pcall(GetFloat, key)
+	if ok and v ~= nil then
+		return tonumber(v) or (tonumber(default) or 0)
+	end
+	return tonumber(default) or 0
+end
+
+function E.getInt(key, default)
+	if not isFn(GetInt) then return math.floor(tonumber(default) or 0) end
+	local ok, v = pcall(GetInt, key)
+	if ok and v ~= nil then
+		return math.floor(tonumber(v) or (tonumber(default) or 0))
+	end
+	return math.floor(tonumber(default) or 0)
+end
+
+function E.getString(key, default)
+	if not isFn(GetString) then return tostring(default or "") end
+	local ok, v = pcall(GetString, key)
+	if ok and v ~= nil then
+		return tostring(v)
+	end
+	return tostring(default or "")
+end
+
+function E.getBool(key, default)
+	if isFn(GetBool) then
+		local ok, v = pcall(GetBool, key)
+		if ok and v ~= nil then return v == true end
+	end
+	return default == true
+end
+
+function E.setFloat(key, value)
+	if not isFn(SetFloat) then return false end
+	return pcall(SetFloat, key, tonumber(value) or 0) == true
+end
+
+function E.setInt(key, value)
+	if not isFn(SetInt) then return false end
+	return pcall(SetInt, key, math.floor(tonumber(value) or 0)) == true
+end
+
+function E.setString(key, value)
+	if not isFn(SetString) then return false end
+	return pcall(SetString, key, tostring(value or "")) == true
+end
+
+function E.setBool(key, value)
+	if not isFn(SetBool) then return false end
+	return pcall(SetBool, key, value == true) == true
 end
 
 local function clearArray(t)

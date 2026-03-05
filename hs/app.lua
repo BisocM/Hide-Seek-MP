@@ -1,87 +1,60 @@
-
 #include "core/init.lua"
-
-#include "mplib/hud.lua"
-#include "mplib/teams.lua"
-
 #include "shared/init.lua"
 
-#include "server/spawns.lua"
-#include "server/teams.lua"
-#include "server/abilities.lua"
-#include "server/tagging.lua"
+#include "util/math.lua"
+#include "util/time.lua"
+#include "util/table.lua"
+
+#include "contracts/command_types.lua"
+#include "contracts/event_types.lua"
+#include "contracts/schemas.lua"
+#include "contracts/validate.lua"
+#include "contracts/ability_errors.lua"
+
+#include "domain/events.lua"
+#include "domain/model/state.lua"
+#include "domain/reducers/internal.lua"
+#include "domain/reducers/command.lua"
+#include "domain/reducers/tick.lua"
+
+#include "infra/clock.lua"
+#include "infra/players.lua"
+#include "infra/world.lua"
+#include "infra/targeting.lua"
+#include "infra/spatial.lua"
+#include "infra/player_tools.lua"
+#include "infra/combat.lua"
+#include "infra/mimic.lua"
+#include "infra/events.lua"
+#include "infra/effects.lua"
+#include "infra/loadout.lua"
+#include "infra/snapshot_writer.lua"
+
 #include "server/round.lua"
-#include "server/loadout.lua"
-#include "server/gamemode.lua"
-#include "server/notify.lua"
-#include "server/rpc.lua"
 
-#include "client/ui_primitives.lua"
-#include "client/toast.lua"
-#include "client/feed.lua"
-#include "client/notify.lua"
-#include "client/hud.lua"
-#include "client/abilities.lua"
-#include "client/time_sync.lua"
-#include "client/spectate.lua"
-#include "client/pregame.lua"
-#include "client/trail.lua"
-#include "client/admin_menu.lua"
-#include "client/gamemode.lua"
+#include "presentation/client/widgets/ui_helpers.lua"
+#include "presentation/client/widgets/hud_runtime.lua"
+#include "presentation/client/scenes/team_select_scene.lua"
 
-HS = HS or {}
-HS.app = HS.app or {}
+#include "presentation/client/widgets/primitives.lua"
+#include "presentation/client/widgets/hud_widget.lua"
+#include "presentation/client/widgets/toast_widget.lua"
+#include "presentation/client/widgets/feed_widget.lua"
+#include "presentation/client/widgets/admin_menu_widget.lua"
 
-local function initContext(side)
-	local ctx = HS.ctx.init(side)
-	ctx.log = HS.log
-	ctx.telemetry = HS.telemetry
-	ctx.engine = HS.engine
-	ctx.persist = HS.persist
-	ctx.i18n = HS.i18n
-	ctx.settings = HS.settings
-	return ctx
-end
+#include "presentation/client/controllers/spectate_controller.lua"
+#include "presentation/client/controllers/abilities_controller.lua"
+#include "presentation/client/scenes/setup.lua"
 
-HS.app.server = HS.app.server or {}
-HS.app.client = HS.app.client or {}
+#include "app/common/store.lua"
+#include "app/common/command_dedupe.lua"
+#include "app/client/commands.lua"
+#include "app/server/runtime.lua"
+#include "app/client/runtime.lua"
 
-function HS.app.server.init()
-	local ctx = initContext("server")
-	HS.runtime.beginFrame(ctx, 0)
-	if HS.srv and HS.srv.app and HS.srv.app.init then
-		HS.srv.app.init()
-	end
-end
+#include "infra/adapters/net/server_handlers.lua"
+#include "infra/adapters/net/client_handlers.lua"
 
-function HS.app.server.tick(dt)
-	local ctx = initContext("server")
-	HS.runtime.beginFrame(ctx, dt)
-	if HS.srv and HS.srv.app and HS.srv.app.tick then
-		HS.srv.app.tick(dt)
-	end
-end
+#include "presentation/client/runtime/runtime.lua"
 
-function HS.app.client.init()
-	local ctx = initContext("client")
-	HS.runtime.beginFrame(ctx, 0)
-	if HS.cli and HS.cli.app and HS.cli.app.init then
-		HS.cli.app.init()
-	end
-end
-
-function HS.app.client.tick(dt)
-	local ctx = initContext("client")
-	HS.runtime.beginFrame(ctx, dt)
-	if HS.cli and HS.cli.app and HS.cli.app.tick then
-		HS.cli.app.tick(dt)
-	end
-end
-
-function HS.app.client.draw()
-	local ctx = initContext("client")
-	HS.runtime.beginFrame(ctx, HS.engine.timeStep())
-	if HS.cli and HS.cli.app and HS.cli.app.draw then
-		HS.cli.app.draw()
-	end
-end
+#include "app/init.lua"

@@ -30,29 +30,29 @@ L._basegameTools = L._basegameTools or {
 	"explosive",
 }
 
-local function isFn(f) return type(f) == "function" end
-
 local function safeHasKey(key)
-	if not isFn(HasKey) then return false end
-	local ok, v = pcall(HasKey, key)
-	return ok and v == true
+	if HS.engine and HS.engine.hasKey then
+		return HS.engine.hasKey(key) == true
+	end
+	return false
 end
 
 local function safeListKeys(prefix)
-	if not isFn(ListKeys) then return nil end
-	local ok, v = pcall(ListKeys, prefix)
-	if ok and type(v) == "table" then
-		return v
+	if HS.engine and HS.engine.listKeys then
+		local v = HS.engine.listKeys(prefix)
+		if type(v) == "table" then
+			return v
+		end
 	end
 	return nil
 end
 
 local function safeGetString(key, default)
-	if not isFn(GetString) then return default end
-	local ok, v = pcall(GetString, key)
-	if ok and v ~= nil then
-		local s = tostring(v)
-		if s ~= "" then return s end
+	if HS.engine and HS.engine.getString then
+		local s = tostring(HS.engine.getString(key, default) or "")
+		if s ~= "" then
+			return s
+		end
 	end
 	return default
 end
@@ -282,4 +282,3 @@ function L.writePersist(persist, loadout)
 
 	return true
 end
-

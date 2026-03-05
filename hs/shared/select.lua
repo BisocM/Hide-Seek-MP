@@ -8,6 +8,26 @@ local function hsShared()
 	return (shared and shared.hs) or nil
 end
 
+local function matchView(sh)
+	if type(sh) ~= "table" then return nil end
+	return type(sh.match) == "table" and sh.match or nil
+end
+
+local function playersView(sh)
+	if type(sh) ~= "table" then return nil end
+	return type(sh.players) == "table" and sh.players or nil
+end
+
+local function abilitiesView(sh)
+	if type(sh) ~= "table" then return nil end
+	return type(sh.abilities) == "table" and sh.abilities or nil
+end
+
+local function metaView(sh)
+	if type(sh) ~= "table" then return nil end
+	return type(sh.meta) == "table" and sh.meta or nil
+end
+
 local function ensureTable(parent, key)
 	local t = parent[key]
 	if t == nil then
@@ -27,18 +47,21 @@ function Sel.localPlayerId(ctx)
 end
 
 function Sel.localTeam(sh, localId)
-	if not sh or not sh.teamOf then return 0 end
-	return sh.teamOf[localId] or 0
+	local players = playersView(sh)
+	if not players or not players.teamOf then return 0 end
+	return players.teamOf[localId] or 0
 end
 
 function Sel.localOut(sh, localId)
-	if not sh or not sh.outOf then return false end
-	return sh.outOf[localId] == true
+	local players = playersView(sh)
+	if not players or not players.outOf then return false end
+	return players.outOf[localId] == true
 end
 
 function Sel.secondsLeft(sh, now)
-	if not sh then return 0 end
-	local endt = tonumber(sh.phaseEndsAt) or 0
+	local m = matchView(sh)
+	if not m then return 0 end
+	local endt = tonumber(m.phaseEndsAt) or 0
 	if endt <= 0 then return 0 end
 	return math.max(0, endt - (tonumber(now) or 0))
 end
@@ -72,13 +95,18 @@ function Sel.matchVm(ctx, sh)
 
 	local localNow = tonumber(ctx.now) or (HS.engine and HS.engine.now and HS.engine.now()) or 0
 	local now = localNow
+	local m = matchView(sh)
+	local players = playersView(sh)
+	local abilitiesRoot = abilitiesView(sh)
+	local meta = metaView(sh)
+	local serverNowRaw = meta and meta.serverNow
 	if ctx.side == "client" then
 		local tsAt = tonumber(ctx.cache._timeSyncLastAt)
 		local hasFreshTimeSync = tsAt ~= nil and (localNow - tsAt) <= 8.0
 		if hasFreshTimeSync then
 			now = localNow + (tonumber(ctx.cache._serverTimeOffset) or 0)
-		elseif sh and sh.serverNow ~= nil then
-			local serverNow = tonumber(sh.serverNow) or 0
+		elseif serverNowRaw ~= nil then
+			local serverNow = tonumber(serverNowRaw) or 0
 			local sample = ctx.cache._serverNowSample
 			if sample == nil or math.abs(serverNow - sample) > 0.0001 then
 				ctx.cache._serverNowSample = serverNow
@@ -99,17 +127,17 @@ function Sel.matchVm(ctx, sh)
 
 	vm.ready = (sh ~= nil)
 	vm.now = now
-	vm.phase = (sh and sh.phase) or HS.const.PHASE_SETUP
-	vm.phaseEndsAt = (sh and tonumber(sh.phaseEndsAt)) or 0
+	vm.phase = (m and m.phase) or HS.const.PHASE_SETUP
+	vm.phaseEndsAt = (m and tonumber(m.phaseEndsAt)) or 0
 	vm.timeLeft = (vm.phaseEndsAt > 0) and math.max(0, vm.phaseEndsAt - now) or 0
-	vm.round = (sh and tonumber(sh.round)) or 0
+	vm.round = (m and tonumber(m.round)) or 0
 	vm.roundsToPlay = (sh and sh.settings and tonumber(sh.settings.roundsToPlay)) or 0
-	vm.scoreSeekers = (sh and tonumber(sh.scoreSeekers)) or 0
-	vm.scoreHiders = (sh and tonumber(sh.scoreHiders)) or 0
-	vm.seekersCount = (sh and tonumber(sh.seekersCount)) or 0
-	vm.hidersRemaining = (sh and tonumber(sh.hidersRemaining)) or 0
-	vm.lastWinner = (sh and tostring(sh.lastWinner or "")) or ""
-	vm.matchActive = (sh and sh.matchActive == true) or false
+	vm.scoreSeekers = (m and tonumber(m.scoreSeekers)) or 0
+	vm.scoreHiders = (m and tonumber(m.scoreHiders)) or 0
+	vm.seekersCount = (m and tonumber(m.seekersCount)) or 0
+	vm.hidersRemaining = (m and tonumber(m.hidersRemaining)) or 0
+	vm.lastWinner = (m and tostring(m.lastWinner or "")) or ""
+	vm.matchActive = (m and m.matchActive == true) or false
 
 	vm.phaseLabel = HS.t(Sel.phaseKey(vm.phase))
 	vm.roleLabel = HS.t(Sel.roleKey(team))
@@ -118,12 +146,13 @@ function Sel.matchVm(ctx, sh)
 	localVm.team = team
 	localVm.out = out
 	localVm.spectating = out or team == 0
-	localVm.isHost = (type(IsPlayerHost) == "function" and type(IsPlayerValid) == "function" and IsPlayerValid(localId) and IsPlayerHost(localId)) or false
+	localVm.isHost = (HS.engine and HS.engine.isPlayerValid and HS.engine.isPlayerHost and HS.engine.isPlayerValid(localId) and HS.engine.isPlayerHost(localId)) or false
 
 	vm.settings = (sh and sh.settings) or {}
-	vm.teamOf = (sh and sh.teamOf) or nil
-	vm.outOf = (sh and sh.outOf) or nil
-	vm.readyOf = (sh and sh.readyOf) or nil
+	vm.uiHints = (sh and sh.uiHints) or {}
+	vm.teamOf = players and players.teamOf or nil
+	vm.outOf = players and players.outOf or nil
+	vm.readyOf = players and players.readyOf or nil
 
 	local abilities = ensureTable(vm, "abilities")
 	local defs = (HS.abilities and HS.abilities.list and HS.abilities.list()) or {}
@@ -133,8 +162,8 @@ function Sel.matchVm(ctx, sh)
 		end
 	end
 
-	local readyMap = sh and sh.abilityReadyAt or nil
-	local armedMap = sh and sh.abilityArmedUntil or nil
+	local readyMap = abilitiesRoot and abilitiesRoot.readyAt or nil
+	local armedMap = abilitiesRoot and abilitiesRoot.armedUntil or nil
 	for i = 1, #defs do
 		local def = defs[i]
 		local id = def and def.id
